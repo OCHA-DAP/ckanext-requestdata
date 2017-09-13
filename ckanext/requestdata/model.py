@@ -295,6 +295,18 @@ def define_maintainers_table():
 
 class ckanextRequestDataCounters(DomainObject):
     @classmethod
+    def filter(cls, **kwargs):
+        return Session.query(cls).filter_by(**kwargs)
+
+    # @classmethod
+    # def get_all(cls, **kwargs):
+    #     '''
+    #     Return a list of counters ids associated with the passed powerview_id.
+    #     '''
+    #     objs_list = Session.query(cls).filter_by(**kwargs).all()
+    #     return objs_list
+
+    @classmethod
     def get(self, **kwds):
         '''Finds a single entity in the table.
         '''

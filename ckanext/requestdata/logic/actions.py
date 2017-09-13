@@ -5,9 +5,13 @@ from ckan.logic import check_access, NotFound
 import ckan.lib.navl.dictization_functions as df
 from ckan.model.user import User
 from ckanext.requestdata.logic import schema
-from ckanext.requestdata.model import ckanextRequestdata,\
+from ckanext.requestdata.model import ckanextRequestdata, \
     ckanextUserNotification, ckanextMaintainers, ckanextRequestDataCounters
 from ckanext.requestdata import helpers
+
+import logging
+
+log = logging.getLogger(__name__)
 
 
 def request_create(context, data_dict):
@@ -223,8 +227,8 @@ def request_patch(context, data_dict):
 
     # Exclude fields from the schema that are not in data_dict
     for field in fields:
-        if field not in data_dict.keys() and\
-           (field != 'id' and field != 'package_id'):
+        if field not in data_dict.keys() and \
+                (field != 'id' and field != 'package_id'):
             request_patch_schema.pop(field)
 
     data, errors = df.validate(data_dict, request_patch_schema, context)
@@ -262,14 +266,6 @@ def request_patch(context, data_dict):
     out = request.as_dict()
 
     return out
-
-
-def request_update(self):
-    pass
-
-
-def request_delete(self):
-    pass
 
 
 def notification_create(context, data_dict):
@@ -440,3 +436,89 @@ def request_data_counters_get_by_org(context, data_dict):
     counters = ckanextRequestDataCounters.search_by_organization(**data)
 
     return counters
+
+
+def request_update(context, data_dict):
+    # data, errors = df.validate(data_dict, schema.request_show_schema(), context)
+    #
+    # if errors:
+    #     raise toolkit.ValidationError(errors)
+    #
+    # check_access('requestdata_request_show', context, data_dict)
+
+    # package_id = data_dict.get('package_id')
+    #
+    # rq_list = ckanextRequestdata.search(package_id=package_id)
+    # counters_list = ckanextRequestDataCounters.filter(package_id=package_id).all()
+    # print "asd"
+    pass
+
+
+# @toolkit.side_effect_free
+def request_delete(context, data_dict):
+    # data, errors = df.validate(data_dict, schema.request_show_schema(), context)
+    #
+    # if errors:
+    #     raise toolkit.ValidationError(errors)
+
+    # check_access('requestdata_request_show', context, data_dict)
+
+    id = data_dict.get('id')
+
+    requestdata = ckanextRequestdata.get(id=id)
+
+    if requestdata is None:
+        raise NotFound('Request with provided \'id\' cannot be found')
+
+    session = context['session']
+    requestdata.delete()
+    session.commit()
+
+
+# @toolkit.side_effect_free
+def maintainer_delete(context, data_dict):
+    maintainer = ckanextMaintainers.get(id=data_dict.get('id'))
+
+    if maintainer is None:
+        raise NotFound('Maintainer with provided \'id\' cannot be found')
+
+    session = context['session']
+    maintainer.delete()
+    session.commit()
+
+
+# @toolkit.side_effect_free
+def counter_delete(context, data_dict):
+    counter = ckanextRequestDataCounters.get(id=data_dict.get('id'))
+
+    if counter is None:
+        raise NotFound('Counter with provided \'id\' cannot be found')
+
+    session = context['session']
+    counter.delete()
+    session.commit()
+
+
+@toolkit.side_effect_free
+def request_delete_by_package_id(context, data_dict):
+    package_id = data_dict.get('package_id')
+    rq_list = ckanextRequestdata.search(package_id=package_id)
+
+    for rq in rq_list:
+
+        request_id = rq.id
+
+        counters_list = ckanextRequestDataCounters.filter(package_id=package_id).all()
+        for c in counters_list:
+            # toolkit.get_action('requestdata_counter_delete')(context, {'id': c.id})
+            counter_delete(context, {'id': c.id})
+
+        maintainers_list = ckanextMaintainers.search(request_data_id=request_id)
+        for maintainer in maintainers_list:
+            # toolkit.get_action('requestdata_maintainer_delete')(context, {'id': maintainer.id})
+            maintainer_delete(context, {'id': maintainer.id})
+
+        # toolkit.get_action('requestdata_request_delete')(context, {'id': request_id})
+        request_delete(context, {'id': request_id})
+
+        log.info('Request data was deleted, with id ' + str(rq.id))

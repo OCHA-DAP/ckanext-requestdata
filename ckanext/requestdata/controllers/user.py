@@ -36,6 +36,7 @@ def _get_action(action, data_dict):
 class UserController(BaseController):
 
     def my_requested_data(self, id):
+
         '''Handles creating template for 'My Requested Data' page in the
         user's dashboard.
 

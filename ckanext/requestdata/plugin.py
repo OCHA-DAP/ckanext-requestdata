@@ -1,11 +1,16 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
+import logging
+import ckan.model as model
 
+from ckan.common import c
 from ckanext.requestdata.model import setup as model_setup
 from ckanext.requestdata.logic import actions
 from ckanext.requestdata.logic import auth
 from ckanext.requestdata import helpers
 from ckanext.requestdata.logic import validators
+
+log = logging.getLogger(__name__)
 
 
 class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
@@ -41,17 +46,17 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
     def before_map(self, map):
 
-        package_controller =\
+        package_controller = \
             'ckanext.requestdata.controllers.package:PackageController'
-        user_controller =\
+        user_controller = \
             'ckanext.requestdata.controllers.user:UserController'
-        request_data_controller = 'ckanext.requestdata.controllers.'\
-            'request_data:RequestDataController'
+        request_data_controller = 'ckanext.requestdata.controllers.' \
+                                  'request_data:RequestDataController'
         admin_controller = \
             'ckanext.requestdata.controllers.admin:AdminController'
-        organization_controller = 'ckanext.requestdata.controllers.'\
-            'organization:OrganizationController'
-        search_controller =\
+        organization_controller = 'ckanext.requestdata.controllers.' \
+                                  'organization:OrganizationController'
+        search_controller = \
             'ckanext.requestdata.controllers.search:SearchController'
 
         map.connect('/dataset/new',
@@ -119,26 +124,29 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
             'requestdata_request_create': actions.request_create,
             'requestdata_request_show': actions.request_show,
             'requestdata_request_list_for_current_user':
-            actions.request_list_for_current_user,
+                actions.request_list_for_current_user,
             'requestdata_request_list_for_organization':
-            actions.request_list_for_organization,
+                actions.request_list_for_organization,
             'requestdata_request_list_for_sysadmin':
-            actions.request_list_for_sysadmin,
+                actions.request_list_for_sysadmin,
             'requestdata_request_patch': actions.request_patch,
             'requestdata_request_update': actions.request_update,
-            'requestdata_request_delete': actions.request_delete,
+            # 'requestdata_request_delete': actions.request_delete,
             'requestdata_notification_create': actions.notification_create,
             'requestdata_notification_for_current_user':
-            actions.notification_for_current_user,
+                actions.notification_for_current_user,
             'requestdata_notification_change': actions.notification_change,
             'requestdata_increment_request_data_counters':
-            actions.increment_request_data_counters,
+                actions.increment_request_data_counters,
             'requestdata_request_data_counters_get':
-            actions.request_data_counters_get,
+                actions.request_data_counters_get,
             'requestdata_request_data_counters_get_all':
-            actions.request_data_counters_get_all,
+                actions.request_data_counters_get_all,
             'requestdata_request_data_counters_get_by_org':
-            actions.request_data_counters_get_by_org
+                actions.request_data_counters_get_by_org,
+            'requestdata_request_delete_by_package_id': actions.request_delete_by_package_id,
+            # 'requestdata_maintainer_delete': actions.maintainer_delete,
+            # 'requestdata_counter_delete': actions.counter_delete,
         }
 
     # IAuthFunctions
@@ -148,12 +156,12 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
             'requestdata_request_create': auth.request_create,
             'requestdata_request_show': auth.request_show,
             'requestdata_request_list_for_current_user':
-            auth.request_list_for_current_user,
+                auth.request_list_for_current_user,
             'requestdata_request_list_for_organization':
-            auth.request_list_for_organization,
+                auth.request_list_for_organization,
             'requestdata_request_patch': auth.request_patch,
             'requestdata_request_list_for_sysadmin':
-            auth.request_list_for_sysadmin
+                auth.request_list_for_sysadmin
         }
 
     # ITemplateHelpers
@@ -240,3 +248,35 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
             search_params.update({'fq': fq})
 
         return search_params
+
+    def delete(self, entity):
+        log.info("in delete")
+
+    def after_delete(self, context, pkg_dict):
+        log.info("in after_delete")
+
+    # IDomainObjectModification
+
+    # def notify(self, entity, operation):
+    #     try:
+    #         if entity and entity.__class__ and 'Package' == entity.__class__.__name__ and operation == 'deleted':
+    #             if self._is_requested_data_type(entity=entity):
+    #                 context = {
+    #                     'model': model,
+    #                     'session': model.Session,
+    #                     'user': c.user or c.author,
+    #                     'auth_user_obj': c.userobj
+    #                 }
+    #                 toolkit.get_action("requestdata_request_delete_by_package_id")(context, {'package_id': entity.id})
+    #                 log.info('Requestdata delete by package_id ' + str(entity.id))
+    #
+    #     except Exception, ex:
+    #         log.exception(ex)
+    #         log.warn('Problem occured while trying to delete requestdata requests')
+    #     log.info("in notify")
+    #
+    # def _is_requested_data_type(self, entity):
+    #     for extra in entity.extras_list:
+    #         if extra.key == 'is_requestdata_type':
+    #             return 'true' == extra.value
+    #     return False
