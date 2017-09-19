@@ -22,6 +22,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.ITemplateHelpers)
     plugins.implements(plugins.IDatasetForm)
     plugins.implements(plugins.IPackageController, inherit=True)
+    plugins.implements(plugins.IDomainObjectModification, inherit=True)
 
     # IConfigurer
 
@@ -161,7 +162,8 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
                 auth.request_list_for_organization,
             'requestdata_request_patch': auth.request_patch,
             'requestdata_request_list_for_sysadmin':
-                auth.request_list_for_sysadmin
+                auth.request_list_for_sysadmin,
+            'requestdata_request_delete_by_package_id': auth.request_delete_by_package_id,
         }
 
     # ITemplateHelpers
@@ -249,34 +251,27 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
         return search_params
 
-    def delete(self, entity):
-        log.info("in delete")
-
-    def after_delete(self, context, pkg_dict):
-        log.info("in after_delete")
-
     # IDomainObjectModification
 
-    # def notify(self, entity, operation):
-    #     try:
-    #         if entity and entity.__class__ and 'Package' == entity.__class__.__name__ and operation == 'deleted':
-    #             if self._is_requested_data_type(entity=entity):
-    #                 context = {
-    #                     'model': model,
-    #                     'session': model.Session,
-    #                     'user': c.user or c.author,
-    #                     'auth_user_obj': c.userobj
-    #                 }
-    #                 toolkit.get_action("requestdata_request_delete_by_package_id")(context, {'package_id': entity.id})
-    #                 log.info('Requestdata delete by package_id ' + str(entity.id))
-    #
-    #     except Exception, ex:
-    #         log.exception(ex)
-    #         log.warn('Problem occured while trying to delete requestdata requests')
-    #     log.info("in notify")
-    #
-    # def _is_requested_data_type(self, entity):
-    #     for extra in entity.extras_list:
-    #         if extra.key == 'is_requestdata_type':
-    #             return 'true' == extra.value
-    #     return False
+    def notify(self, entity, operation):
+        try:
+            if entity and entity.__class__ and 'Package' == entity.__class__.__name__ and operation == 'deleted':
+                if self._is_requested_data_type(entity=entity):
+                    context = {
+                        'model': model,
+                        'session': model.Session,
+                        'user': c.user or c.author,
+                        'auth_user_obj': c.userobj,
+                        'defer_commit': True
+                    }
+                    toolkit.get_action("requestdata_request_delete_by_package_id")(context, {'package_id': entity.id})
+
+        except Exception, ex:
+            log.exception(ex)
+            log.warn('Problem occured while trying to delete requestdata requests')
+
+    def _is_requested_data_type(self, entity):
+        for extra in entity.extras_list:
+            if extra.key == 'is_requestdata_type':
+                return 'true' == extra.value
+        return False

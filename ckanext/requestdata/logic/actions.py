@@ -472,7 +472,11 @@ def request_delete(context, data_dict):
 
     session = context['session']
     requestdata.delete()
-    session.commit()
+
+    if not context.get('defer_commit'):
+        session.commit()
+    else:
+        session.flush()
 
 
 # @toolkit.side_effect_free
@@ -484,7 +488,10 @@ def maintainer_delete(context, data_dict):
 
     session = context['session']
     maintainer.delete()
-    session.commit()
+    if not context.get('defer_commit'):
+        session.commit()
+    else:
+        session.flush()
 
 
 # @toolkit.side_effect_free
@@ -496,11 +503,17 @@ def counter_delete(context, data_dict):
 
     session = context['session']
     counter.delete()
-    session.commit()
+    if not context.get('defer_commit'):
+        session.commit()
+    else:
+        session.flush()
 
 
-@toolkit.side_effect_free
+# @toolkit.side_effect_free
 def request_delete_by_package_id(context, data_dict):
+
+    check_access('requestdata_request_delete_by_package_id', context, data_dict)
+
     package_id = data_dict.get('package_id')
     rq_list = ckanextRequestdata.search(package_id=package_id)
 

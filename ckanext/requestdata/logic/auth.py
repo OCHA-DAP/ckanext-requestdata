@@ -1,6 +1,7 @@
 from ckan.plugins.toolkit import _
 from ckan.plugins.toolkit import get_action
 from ckan import logic
+import ckan.authz as authz
 
 
 def request_create(context, data_dict):
@@ -91,3 +92,7 @@ def _user_has_access_to_request(context, data_dict):
                 return True
 
     return False
+
+
+def request_delete_by_package_id(context, data_dict):
+    return authz.is_authorized('package_delete', context, {'id': data_dict['package_id']})
