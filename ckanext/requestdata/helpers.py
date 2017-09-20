@@ -160,7 +160,7 @@ def is_hdx_portal():
 
 
 def is_current_user_a_maintainer(maintainers):
-    if c.user:
+    if c.user and maintainers:
         current_user = _get_action('user_show', {'id': c.user})
         user_id = current_user.get('id')
         user_name = current_user.get('name')
