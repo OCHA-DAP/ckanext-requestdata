@@ -12,7 +12,7 @@ get_action = logic.get_action
 NotAuthorized = logic.NotAuthorized
 ValidationError = logic.ValidationError
 clean_dict = logic.clean_dict
-redirect = base.redirect
+# redirect = base.redirect
 abort = base.abort
 tuplize_dict = logic.tuplize_dict
 parse_params = logic.parse_params
@@ -52,7 +52,7 @@ class PackageController(_PackageController):
                     url = h.url_for(controller='package', action='read',
                                     id=package['name'])
 
-                    redirect(url)
+                    toolkit.redirect_to(url)
                 except NotAuthorized:
                     abort(403, _('Unauthorized to create a dataset.'))
                 except ValidationError, e:
