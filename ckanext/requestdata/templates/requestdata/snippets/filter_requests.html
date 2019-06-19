@@ -13,6 +13,7 @@ Example usage:
 
 {% resource 'requestdata/filter-requests.js' %}
 
+{% if filter_options %}
 <div data-module="filter-requests"
      data-module-org_name="{{ org_name }}"
      data-module-type="{{ type }}"
@@ -45,3 +46,4 @@ Example usage:
       </div>
     </div>
 </div>
+{% endif %}
