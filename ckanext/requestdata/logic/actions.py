@@ -134,7 +134,7 @@ def request_list_for_sysadmin(context, data_dict):
 
     '''
 
-    check_access('requestdata_request_list_for_sysadmin',
+    check_access('hdx_request_data_admin_list',
                  context, data_dict)
 
     requests = ckanextRequestdata.search()
