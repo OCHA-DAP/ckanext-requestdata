@@ -187,12 +187,13 @@ class AdminController(BaseController):
                 r['maintainers'] = pkg_maintainers
             new_org_dict = orgs_map.get(org_dict['name'])
 
+            archived_requests = [r for r in requests if r.get('state') == 'archive']
             grouped_archived_requests = {
                 'package_id': pkg_dict['id'],
                 'title': pkg_dict.get('title'),
                 'maintainers': pkg_maintainers,
-                'requests_archived': requests,
-                'requests': len(requests),
+                'requests_archived': archived_requests,
+                'requests': len(archived_requests),
                 'shared': None,
             }
 
@@ -205,7 +206,7 @@ class AdminController(BaseController):
                     'id': org_dict['id'],
                     'requests_new': [r for r in requests if r.get('state') == 'new'],
                     'requests_open': [r for r in requests if r.get('state') == 'open'],
-                    'requests_archive': [grouped_archived_requests],
+                    'requests_archive': [grouped_archived_requests] if archived_requests else [],
                     'maintainers': [],
                     'counters': {},
                     'packages': [pkg_dict]
