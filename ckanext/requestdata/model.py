@@ -2,7 +2,7 @@ import logging
 import datetime
 
 from sqlalchemy import Table, Column, Index, ForeignKey
-from sqlalchemy import types, func
+from sqlalchemy import types, func, text
 
 from sqlalchemy.engine.reflection import Inspector
 from ckan.model.meta import metadata, mapper, Session, engine
@@ -115,7 +115,7 @@ class ckanextRequestdata(DomainObject):
 
         query = Session.query(self).autoflush(False)
         query = query.filter_by(**kwds)
-        query = query.order_by(order)
+        query = query.order_by(text(order))
         return query.all()
 
     @classmethod
