@@ -1,7 +1,7 @@
 import json
 from paste.deploy.converters import asbool
 from pylons import config
-from email_validator import validate_email
+from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
 from ckan.lib import base
 from ckan import logic, model
 from ckan.plugins import toolkit

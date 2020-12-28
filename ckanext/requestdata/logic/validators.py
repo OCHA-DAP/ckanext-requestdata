@@ -1,7 +1,7 @@
-from email_validator import validate_email
+from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
 from paste.deploy.converters import asbool
 
-from ckan.plugins.toolkit import _
+from ckan.common import _
 from ckan.plugins.toolkit import get_action
 
 
