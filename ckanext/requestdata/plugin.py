@@ -271,7 +271,10 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
             log.warn('Problem occured while trying to delete requestdata requests')
 
     def _is_requested_data_type(self, entity):
-        for extra in entity.extras_list:
-            if extra.key == 'is_requestdata_type':
-                return 'true' == extra.value
+        if entity.extras_list:
+            for extra in entity.extras_list:
+                if extra.key == 'is_requestdata_type':
+                    return 'true' == extra.value
+        elif entity.extras:
+            return 'true' == entity.extras.get('is_requestdata_type')
         return False
