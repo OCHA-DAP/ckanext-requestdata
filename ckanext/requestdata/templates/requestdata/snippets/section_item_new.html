@@ -18,7 +18,7 @@ Example usage:
   {% resource 'requestdata/css/new-requests.css' %}
 {% endif %}
 
-{% set package_url = h.url_for(controller='package', action='read', id=item.package_id) %}
+{% set package_url = h.url_for('dataset_read', id=item.package_id) %}
 
 <div class="requested-data-container__content-item" style="background-color: #FEFBED; {% if index == 1 %} border-top: 1px solid #CCCCCC {% endif %}">
   <div class="requested-data-container__content-item--sections" style="padding-top: 15px;">

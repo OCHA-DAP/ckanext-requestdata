@@ -49,8 +49,7 @@ class PackageController(_PackageController):
                 try:
                     package = get_action('package_create')(context, data_dict)
 
-                    url = h.url_for(controller='package', action='read',
-                                    id=package['name'])
+                    url = h.url_for('dataset_read', id=package['name'])
 
                     toolkit.redirect_to(url)
                 except NotAuthorized:
