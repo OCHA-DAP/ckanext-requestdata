@@ -131,7 +131,7 @@ class ckanextRequestdata(DomainObject):
                                   ckanextMaintainers.request_data_id,
                                   ckanextMaintainers.maintainer_id ==
                                   maintainer_id)\
-                          .order_by(order).all()
+                          .order_by(text(order)).all()
 
         requests_data = []
         for r in requests:
