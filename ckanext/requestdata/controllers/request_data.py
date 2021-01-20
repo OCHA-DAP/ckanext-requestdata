@@ -3,7 +3,6 @@ from ckan.common import c, _
 from ckan import logic
 from ckanext.requestdata import emailer
 from ckan.plugins import toolkit
-from ckan.controllers.admin import get_sysadmins
 
 try:
     # CKAN 2.7 and later
@@ -22,6 +21,12 @@ abort = base.abort
 BaseController = base.BaseController
 
 
+def _get_sysadmins():
+    q = model.Session.query(model.User).filter(model.User.sysadmin == True,
+                                               model.User.state == 'active')
+    return q.all()
+
+
 def _get_context():
     return {
         'model': model,
@@ -36,8 +41,8 @@ def _get_action(action, data_dict):
 
 
 def _get_email_configuration(
-        user_name, data_owner, dataset_name, email, message, organization,
-        data_maintainers, only_org_admins=False):
+    user_name, data_owner, dataset_name, email, message, organization,
+    data_maintainers, only_org_admins=False):
     schema = logic.schema.update_configuration_schema()
     avaiable_terms = ['{name}', '{data_maintainers}', '{dataset}',
                       '{organization}', '{message}', '{email}']
@@ -64,9 +69,9 @@ def _get_email_configuration(
     for i in range(0, len(avaiable_terms)):
         if avaiable_terms[i] == '{dataset}' and new_terms[i]:
             url = toolkit.url_for(
-                                    controller='package',
-                                    action='read',
-                                    id=new_terms[i], qualified=True)
+                controller='package',
+                action='read',
+                id=new_terms[i], qualified=True)
             new_terms[i] = '<a href="' + url + '">' + new_terms[i] + '</a>'
         elif avaiable_terms[i] == '{organization}' and is_user_sysadmin:
             new_terms[i] = config.get('ckan.site_title')
@@ -106,15 +111,15 @@ def _get_email_configuration(
          as soon as you can by visiting the \
          <a href="' + url + '">My Requests</a> page.</strong>'
 
-    organizations =\
+    organizations = \
         _get_action('organization_list_for_user', {'id': data_owner})
 
     package = _get_action('package_show', {'id': dataset_name})
 
     if not only_org_admins:
         for org in organizations:
-            if org['name'] in organization\
-                    and package['owner_org'] == org['id']:
+            if org['name'] in organization \
+                and package['owner_org'] == org['id']:
                 url = \
                     toolkit.url_for('requestdata_organization_requests',
                                     id=org['name'], qualified=True)
@@ -190,17 +195,18 @@ class RequestDataController(BaseController):
 
         orgs = []
         for i in organizations:
-                orgs.append(i['display_name'])
+            orgs.append(i['display_name'])
         org = ','.join(orgs)
         dataset_name = package['name']
         dataset_title = package['title']
         email = user_obj.email
         message = data['message_content']
         creator_user_id = package['creator_user_id']
-        data_owner =\
+        data_owner = \
             _get_action('user_show', {'id': creator_user_id}).get('name')
-        if len(get_sysadmins()) > 0:
-            sysadmin = get_sysadmins()[0].name
+        _sysadmins = _get_sysadmins()
+        if len(_sysadmins) > 0:
+            sysadmin = _sysadmins[0].name
             context_sysadmin = {
                 'model': model,
                 'session': model.Session,
@@ -229,7 +235,7 @@ class RequestDataController(BaseController):
             # Get users objects from maintainers list
             for id in maintainers:
                 try:
-                    user =\
+                    user = \
                         toolkit.get_action('user_show')(context_sysadmin,
                                                         {'id': id})
                     data_dict['users'].append(user)
@@ -237,9 +243,9 @@ class RequestDataController(BaseController):
                     data_maintainers.append(user['fullname'] or user['name'])
                 except NotFound:
                     pass
-            mail_subject =\
-                config.get('ckan.site_title') + ': New data request "'\
-                                                + dataset_title + '"'
+            mail_subject = \
+                config.get('ckan.site_title') + ': New data request "' \
+                + dataset_title + '"'
 
             if len(users_email) == 0:
                 admins = self._org_admins_for_dataset(dataset_name)
