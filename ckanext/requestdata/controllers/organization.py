@@ -6,6 +6,8 @@ from ckan.controllers import organization
 from collections import Counter
 from ckanext.requestdata import helpers
 
+import ckanext.hdx_org_group.helpers.org_meta_dao as org_meta_dao
+
 
 get_action = logic.get_action
 NotFound = logic.NotFound
@@ -238,6 +240,15 @@ class OrganizationController(organization.OrganizationController):
 
         self._setup_template_variables(context, {'id': id},
                                        group_type=group_type)
+
+        org_meta = org_meta_dao.OrgMetaDao(id, c.user or c.author, c.userobj)
+        try:
+            org_meta.fetch_all()
+        except NotFound, e:
+            abort(404)
+        except NotAuthorized, e:
+            abort(403, _('Not authorized to see this page'))
+        c.org_meta = org_meta
 
         return render('requestdata/organization_requested_data.html',
                       extra_vars)
