@@ -7,6 +7,7 @@ from collections import Counter
 from ckanext.requestdata import helpers
 
 import ckanext.hdx_org_group.helpers.org_meta_dao as org_meta_dao
+import ckanext.hdx_org_group.helpers.organization_helper as helper
 
 
 get_action = logic.get_action
@@ -248,7 +249,9 @@ class OrganizationController(organization.OrganizationController):
             abort(404)
         except NotAuthorized, e:
             abort(403, _('Not authorized to see this page'))
+        helper.org_add_last_updated_field([org_meta.org_dict])
         c.org_meta = org_meta
-
-        return render('requestdata/organization_requested_data.html',
-                      extra_vars)
+        if org_meta.is_custom:
+            return render('requestdata/custom_organization_requested_data.html', extra_vars)
+        else:
+            return render('requestdata/organization_requested_data.html', extra_vars)
