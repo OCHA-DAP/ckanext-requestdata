@@ -63,6 +63,13 @@ class AdminController(BaseController):
 
             :returns template
         '''
+        context = {'model': model,
+                   'user': c.user, 'auth_user_obj': c.userobj}
+        try:
+            logic.check_access('config_option_update', context, {})
+        except logic.NotAuthorized:
+            base.abort(403, _('Need to be sysadmin to access this page'))
+
         data = request.POST
         if 'save' in data:
             try:
@@ -109,7 +116,7 @@ class AdminController(BaseController):
         maintainer_ids = {pkg_dict.get('maintainer')
                           for pkg_dict in search_result.get('results', []) if pkg_dict.get('maintainer')}
         maintainers_dict = self.__build_maintainers_dict(maintainer_ids)
-        
+
         orgs_map = self.__build_organizations_dict(search_result.get('results'), package_ids_to_requests,
                                                maintainers_dict)
         filtered_orgs = self.__find_filtered_orgs()
