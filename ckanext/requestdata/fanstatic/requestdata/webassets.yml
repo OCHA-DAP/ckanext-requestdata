@@ -1,0 +1,4 @@
+main-styles:
+  output: ckanext-requestdata/%(version)s_main-styles.css
+  contents:
+    - requestdata/css/main.css
