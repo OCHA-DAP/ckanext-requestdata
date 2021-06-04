@@ -1,0 +1,47 @@
+common-js: &common-js
+  filters: rjsmin
+
+common-css: &common-css
+  filters: cssrewrite
+
+main-styles:
+  output: ckanext-requestdata/%(version)s_main-styles.css
+  contents:
+    - requestdata/css/main.css
+
+section-item-scripts:
+  output: ckanext-requestdata/%(version)s_section-item-styles.js
+  contents:
+    - requestdata/handle-reopen-request.js
+    - requestdata/expand-dataset.js
+
+modules-scripts:
+  output: ckanext-requestdata/%(version)s_modules-scripts.js
+  contents:
+    - requestdata/filter-requests.js
+    - requestdata/expand-dataset.js
+
+handle-open-req-scripts:
+  output: ckanext-requestdata/%(version)s_handle-open-req-scripts.js
+  contents:
+    - requestdata/handle-open-request.js
+
+add-dataset-scripts:
+  output: ckanext-requestdata/%(version)s_add-dataset-scripts.js
+  contents:
+    - requestdata/add-dataset.js
+
+modal-form-scripts:
+  output: ckanext-requestdata/%(version)s_modal-form-scripts.js
+  contents:
+    - requestdata/modal-form.js
+
+disable-visibility-scripts:
+  output: ckanext-requestdata/%(version)s_disable-visibility-scripts.js
+  contents:
+    - requestdata/disable-visibility.js
+
+new-requests-styles:
+  output: ckanext-requestdata/%(version)s_new-requests-styles.css
+  contents:
+    - requestdata/css/new-requests.css

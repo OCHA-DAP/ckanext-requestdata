@@ -10,12 +10,14 @@ Example usage:
 
 #}
 
-{% resource 'requestdata/modal-form.js' %}
+{#{% resource 'requestdata/modal-form.js' %}#}
+{% asset 'requestdata/modal-form-scripts' %}
 
 {% set is_hdx_portal = h.requestdata_is_hdx_portal() %}
 
 {% if not is_hdx_portal %}
-  {% resource 'requestdata/css/new-requests.css' %}
+{#  {% resource 'requestdata/css/new-requests.css' %}#}
+  {% asset 'requestdata/new-requests-styles' %}
 {% endif %}
 
 {% set package_url = h.url_for('dataset_read', id=item.package_id) %}

@@ -2,5 +2,6 @@
 
 {% block styles %}
   {{ super() }}
-  {% resource 'requestdata/css/main.css' %}
+{#  {% resource 'requestdata/css/main.css' %}#}
+  {% asset 'requestdata/main-styles' %}
 {% endblock %}
