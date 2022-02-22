@@ -5,7 +5,7 @@ from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
 from ckan.lib import base
 from ckan import logic, model
 from ckan.plugins import toolkit
-from ckan.common import c, _, request
+from ckan.common import g,c, _, request
 from ckan import authz
 import ckan.lib.helpers as h
 from ckanext.requestdata.emailer import send_email
@@ -100,7 +100,7 @@ class UserController(BaseController):
                     _get_action('package_show', {'id': item['package_id']})
                 package_maintainers_ids = package['maintainer'].split(',')
                 item['title'] = package['title']
-            except NotFound, e:
+            except NotFound as e:
                 # package was not found, possibly deleted
                 continue
             maintainers = []
@@ -148,7 +148,7 @@ class UserController(BaseController):
         }
 
         context = _get_context()
-        user_obj = context['auth_user_obj']
+        g.userobj = user_obj = context['auth_user_obj']
         user_id = user_obj.id
         data_dict = {
             'user_id': user_id
