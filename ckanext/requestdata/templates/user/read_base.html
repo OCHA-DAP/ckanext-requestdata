@@ -4,6 +4,6 @@
   {{ super() }}
 
   {% if c.is_myself %}
-    {{ h.build_nav_icon('requestdata_my_requests', _('My Requests'), id=user.name) }}
+    {{ h.build_nav_icon('requestdata.my_requested_data', _('My Requests'), id=user.name) }}
   {% endif %}
 {% endblock %}

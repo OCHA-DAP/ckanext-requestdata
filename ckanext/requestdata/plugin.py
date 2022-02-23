@@ -9,6 +9,7 @@ from ckanext.requestdata.logic import actions
 from ckanext.requestdata.logic import auth
 from ckanext.requestdata import helpers
 from ckanext.requestdata.logic import validators
+from ckanext.requestdata.views import user as user
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IDatasetForm)
     plugins.implements(plugins.IPackageController, inherit=True)
     plugins.implements(plugins.IDomainObjectModification, inherit=True)
+    plugins.implements(plugins.IBlueprint)
 
     # IConfigurer
 
@@ -50,8 +52,8 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
         package_controller = \
             'ckanext.requestdata.controllers.package:PackageController'
-        user_controller = \
-            'ckanext.requestdata.controllers.user:UserController'
+        # user_controller = \
+        #     'ckanext.requestdata.controllers.user:UserController'
         request_data_controller = 'ckanext.requestdata.controllers.' \
                                   'request_data:RequestDataController'
         admin_controller = \
@@ -64,23 +66,6 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         map.connect('/dataset/new',
                     controller=package_controller,
                     action='create_metadata_package')
-
-        map.connect('requestdata_my_requests',
-                    '/user/my_requested_data/{id}',
-                    controller=user_controller,
-                    action='my_requested_data', ckan_icon='list')
-
-        map.connect('requestdata_handle_new_request_action',
-                    '/user/my_requested_data/{username}/' +
-                    '{request_action:reply|reject}',
-                    controller=user_controller,
-                    action='handle_new_request_action')
-
-        map.connect('requestdata_handle_open_request_action',
-                    '/user/my_requested_data/{username}/' +
-                    '{request_action:shared|notshared}',
-                    controller=user_controller,
-                    action='handle_open_request_action')
 
         map.connect('requestdata_send_request', '/request_data',
                     controller=request_data_controller,
@@ -125,27 +110,19 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         return {
             'requestdata_request_create': actions.request_create,
             'requestdata_request_show': actions.request_show,
-            'requestdata_request_list_for_current_user':
-                actions.request_list_for_current_user,
-            'requestdata_request_list_for_organization':
-                actions.request_list_for_organization,
-            'requestdata_request_list_for_sysadmin':
-                actions.request_list_for_sysadmin,
+            'requestdata_request_list_for_current_user': actions.request_list_for_current_user,
+            'requestdata_request_list_for_organization': actions.request_list_for_organization,
+            'requestdata_request_list_for_sysadmin': actions.request_list_for_sysadmin,
             'requestdata_request_patch': actions.request_patch,
             'requestdata_request_update': actions.request_update,
             # 'requestdata_request_delete': actions.request_delete,
             'requestdata_notification_create': actions.notification_create,
-            'requestdata_notification_for_current_user':
-                actions.notification_for_current_user,
+            'requestdata_notification_for_current_user': actions.notification_for_current_user,
             'requestdata_notification_change': actions.notification_change,
-            'requestdata_increment_request_data_counters':
-                actions.increment_request_data_counters,
-            'requestdata_request_data_counters_get':
-                actions.request_data_counters_get,
-            'requestdata_request_data_counters_get_all':
-                actions.request_data_counters_get_all,
-            'requestdata_request_data_counters_get_by_org':
-                actions.request_data_counters_get_by_org,
+            'requestdata_increment_request_data_counters': actions.increment_request_data_counters,
+            'requestdata_request_data_counters_get': actions.request_data_counters_get,
+            'requestdata_request_data_counters_get_all': actions.request_data_counters_get_all,
+            'requestdata_request_data_counters_get_by_org': actions.request_data_counters_get_by_org,
             'requestdata_request_delete_by_package_id': actions.request_delete_by_package_id,
             # 'requestdata_maintainer_delete': actions.maintainer_delete,
             # 'requestdata_counter_delete': actions.counter_delete,
@@ -171,27 +148,17 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
     def get_helpers(self):
         return {
-            'requestdata_time_ago_from_datetime':
-                helpers.time_ago_from_datetime,
-            'requestdata_get_package_title':
-                helpers.get_package_title,
-            'requestdata_get_notification':
-                helpers.get_notification,
-            'requestdata_get_request_counters':
-                helpers.get_request_counters,
-            'requestdata_convert_id_to_email':
-                helpers.convert_id_to_email,
-            'requestdata_has_query_param':
-                helpers.has_query_param,
+            'requestdata_time_ago_from_datetime': helpers.time_ago_from_datetime,
+            'requestdata_get_package_title': helpers.get_package_title,
+            'requestdata_get_notification': helpers.get_notification,
+            'requestdata_get_request_counters': helpers.get_request_counters,
+            'requestdata_convert_id_to_email': helpers.convert_id_to_email,
+            'requestdata_has_query_param': helpers.has_query_param,
             'requestdata_convert_str_to_json': helpers.convert_str_to_json,
-            'requestdata_is_hdx_portal':
-                helpers.is_hdx_portal,
-            'requestdata_is_current_user_a_maintainer':
-                helpers.is_current_user_a_maintainer,
-            'requestdata_get_orgs_for_user':
-                helpers.get_orgs_for_user,
-            'requestdata_role_in_org':
-                helpers.role_in_org
+            'requestdata_is_hdx_portal': helpers.is_hdx_portal,
+            'requestdata_is_current_user_a_maintainer': helpers.is_current_user_a_maintainer,
+            'requestdata_get_orgs_for_user': helpers.get_orgs_for_user,
+            'requestdata_role_in_org': helpers.role_in_org
         }
 
     # IDatasetForm
@@ -267,7 +234,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
                     }
                     toolkit.get_action("requestdata_request_delete_by_package_id")(context, {'package_id': entity.id})
 
-        except Exception, ex:
+        except Exception as ex:
             log.exception(ex)
             log.warn('Problem occured while trying to delete requestdata requests')
 
@@ -279,3 +246,9 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         elif entity.extras:
             return 'true' == entity.extras.get('is_requestdata_type')
         return False
+
+    # IBlueprint
+    def get_blueprint(self):
+        return [
+            user.requestdata
+        ]
