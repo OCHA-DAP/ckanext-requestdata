@@ -1,5 +1,6 @@
+from flask import Blueprint
 from ckan.lib import base
-from ckan.common import c, _
+from ckan.common import c, g, _
 from ckan import logic
 from ckanext.requestdata import emailer
 from ckan.plugins import toolkit
@@ -18,8 +19,8 @@ NotFound = logic.NotFound
 NotAuthorized = logic.NotAuthorized
 ValidationError = logic.ValidationError
 abort = base.abort
-BaseController = base.BaseController
 
+requestdata_send_request = Blueprint(u'requestdata_send_request', __name__, url_prefix=u'/request_data_')
 
 def _get_sysadmins():
     q = model.Session.query(model.User).filter(model.User.sysadmin == True,
@@ -31,8 +32,8 @@ def _get_context():
     return {
         'model': model,
         'session': model.Session,
-        'user': c.user or c.author,
-        'auth_user_obj': c.userobj
+        'user': g.user or g.author,
+        'auth_user_obj': g.userobj
     }
 
 
@@ -51,7 +52,7 @@ def _get_email_configuration(
 
     try:
         is_user_sysadmin = \
-            _get_action('user_show', {'id': c.user}).get('sysadmin')
+            _get_action('user_show', {'id': g.user}).get('sysadmin')
     except NotFound:
         pass
 
@@ -97,7 +98,7 @@ def _get_email_configuration(
     if only_org_admins:
         owner_org = _get_action('package_show',
                                 {'id': dataset_name}).get('owner_org')
-        url = toolkit.url_for('requestdata_organization_requests',
+        url = toolkit.url_for('requestdata_organization_requests.requested_data',
                               id=owner_org, qualified=True)
         email_body += '<br><br> This dataset\'s maintainer does not exist.\
          Go to your organisation\'s <a href="' + url + '">Requested Data</a>\
@@ -121,7 +122,7 @@ def _get_email_configuration(
             if org['name'] in organization \
                 and package['owner_org'] == org['id']:
                 url = \
-                    toolkit.url_for('requestdata_organization_requests',
+                    toolkit.url_for('requestdata_organization_requests.requested_data',
                                     id=org['name'], qualified=True)
                 email_body += '<br><br> Go to <a href="' + url + '">\
                               Requested data</a> page in organization admin.'
@@ -154,148 +155,149 @@ def _get_email_configuration(
     return result
 
 
-class RequestDataController(BaseController):
+def send_request():
+    '''Send mail to resource owner.
 
-    def send_request(self):
-        '''Send mail to resource owner.
+    :param data: Contact form data.
+    :type data: object
 
-        :param data: Contact form data.
-        :type data: object
+    :rtype: json
+    '''
+    context = {'model': model, 'session': model.Session,
+               'user': g.user, 'auth_user_obj': g.userobj}
+    try:
+        if p.toolkit.request.method == 'POST':
+            data = toolkit.request.form.to_dict()
+            _get_action('requestdata_request_create', data)
+    except NotAuthorized:
+        abort(403, _('Unauthorized to update this dataset.'))
+    except ValidationError as e:
+        error = {
+            'success': False,
+            'error': {
+                'fields': e.error_dict
+            }
+        }
+        return json.dumps(error)
 
-        :rtype: json
-        '''
-        context = {'model': model, 'session': model.Session,
-                   'user': c.user, 'auth_user_obj': c.userobj}
-        try:
-            if p.toolkit.request.method == 'POST':
-                data = dict(toolkit.request.POST)
-                _get_action('requestdata_request_create', data)
-        except NotAuthorized:
-            abort(403, _('Unauthorized to update this dataset.'))
-        except ValidationError as e:
-            error = {
+    data_dict = {'id': data['package_id']}
+    package = _get_action('package_show', data_dict)
+    sender_name = data.get('sender_name', '')
+    user_obj = context['auth_user_obj']
+    data_dict = {
+        'id': user_obj.id,
+        'permission': 'read'
+    }
+
+    organizations = _get_action('organization_list_for_user', data_dict)
+
+    orgs = []
+    for i in organizations:
+        orgs.append(i['display_name'])
+    org = ','.join(orgs)
+    dataset_name = package['name']
+    dataset_title = package['title']
+    email = user_obj.email
+    message = data['message_content']
+    creator_user_id = package['creator_user_id']
+    data_owner = \
+        _get_action('user_show', {'id': creator_user_id}).get('name')
+    _sysadmins = _get_sysadmins()
+    if len(_sysadmins) > 0:
+        sysadmin = _sysadmins[0].name
+        context_sysadmin = {
+            'model': model,
+            'session': model.Session,
+            'user': sysadmin,
+            'auth_user_obj': g.userobj
+        }
+        to = package['maintainer']
+        if to is None:
+            message = {
                 'success': False,
                 'error': {
-                    'fields': e.error_dict
-                }
-            }
-
-            return json.dumps(error)
-
-        data_dict = {'id': data['package_id']}
-        package = _get_action('package_show', data_dict)
-        sender_name = data.get('sender_name', '')
-        user_obj = context['auth_user_obj']
-        data_dict = {
-            'id': user_obj.id,
-            'permission': 'read'
-        }
-
-        organizations = _get_action('organization_list_for_user', data_dict)
-
-        orgs = []
-        for i in organizations:
-            orgs.append(i['display_name'])
-        org = ','.join(orgs)
-        dataset_name = package['name']
-        dataset_title = package['title']
-        email = user_obj.email
-        message = data['message_content']
-        creator_user_id = package['creator_user_id']
-        data_owner = \
-            _get_action('user_show', {'id': creator_user_id}).get('name')
-        _sysadmins = _get_sysadmins()
-        if len(_sysadmins) > 0:
-            sysadmin = _sysadmins[0].name
-            context_sysadmin = {
-                'model': model,
-                'session': model.Session,
-                'user': sysadmin,
-                'auth_user_obj': c.userobj
-            }
-            to = package['maintainer']
-            if to is None:
-                message = {
-                    'success': False,
-                    'error': {
-                        'fields': {
-                            'email': 'Dataset maintainer email not found.'
-                        }
+                    'fields': {
+                        'email': 'Dataset maintainer email not found.'
                     }
                 }
-
-                return json.dumps(message)
-            maintainers = to.split(',')
-            data_dict = {
-                'users': []
-            }
-            users_email = []
-            only_org_admins = False
-            data_maintainers = []
-            # Get users objects from maintainers list
-            for id in maintainers:
-                try:
-                    user = \
-                        toolkit.get_action('user_show')(context_sysadmin,
-                                                        {'id': id})
-                    data_dict['users'].append(user)
-                    users_email.append(user['email'])
-                    data_maintainers.append(user['fullname'] or user['name'])
-                except NotFound:
-                    pass
-            mail_subject = \
-                config.get('ckan.site_title') + ': New data request "' \
-                + dataset_title + '"'
-
-            if len(users_email) == 0:
-                admins = self._org_admins_for_dataset(dataset_name)
-
-                for admin in admins:
-                    users_email.append(admin.get('email'))
-                    data_maintainers.append(admin.get('fullname'))
-                only_org_admins = True
-
-            content = _get_email_configuration(
-                sender_name, data_owner, dataset_name, email,
-                message, org, data_maintainers,
-                only_org_admins=only_org_admins)
-
-            response_message = \
-                emailer.send_email(content, users_email, mail_subject)
-
-            # notify package creator that new data request was made
-            _get_action('requestdata_notification_create', data_dict)
-            data_dict = {
-                'package_id': data['package_id'],
-                'flag': 'request'
-            }
-
-            action_name = 'requestdata_increment_request_data_counters'
-            _get_action(action_name, data_dict)
-
-            return json.dumps(response_message)
-        else:
-            message = {
-                'success': True,
-                'message': 'Request sent, but email message was not sent.'
             }
 
             return json.dumps(message)
+        maintainers = to.split(',')
+        data_dict = {
+            'users': []
+        }
+        users_email = []
+        only_org_admins = False
+        data_maintainers = []
+        # Get users objects from maintainers list
+        for id in maintainers:
+            try:
+                user = \
+                    toolkit.get_action('user_show')(context_sysadmin,
+                                                    {'id': id})
+                data_dict['users'].append(user)
+                users_email.append(user['email'])
+                data_maintainers.append(user['fullname'] or user['name'])
+            except NotFound:
+                pass
+        mail_subject = \
+            config.get('ckan.site_title') + ': New data request "' \
+            + dataset_title + '"'
 
-    def _org_admins_for_dataset(self, dataset_name):
-        package = _get_action('package_show', {'id': dataset_name})
-        owner_org = package['owner_org']
-        admins = []
+        if len(users_email) == 0:
+            admins = _org_admins_for_dataset(dataset_name)
 
-        org = _get_action('organization_show', {'id': owner_org})
+            for admin in admins:
+                users_email.append(admin.get('email'))
+                data_maintainers.append(admin.get('fullname'))
+            only_org_admins = True
 
-        for user in org['users']:
-            if user['capacity'] == 'admin':
-                db_user = model.User.get(user['id'])
-                data = {
-                    'email': db_user.email,
-                    'fullname': db_user.fullname or db_user.name
-                }
-                admins.append(data)
+        content = _get_email_configuration(
+            sender_name, data_owner, dataset_name, email,
+            message, org, data_maintainers,
+            only_org_admins=only_org_admins)
 
-        return admins
+        response_message = \
+            emailer.send_email(content, users_email, mail_subject)
+
+        # notify package creator that new data request was made
+        _get_action('requestdata_notification_create', data_dict)
+        data_dict = {
+            'package_id': data['package_id'],
+            'flag': 'request'
+        }
+
+        action_name = 'requestdata_increment_request_data_counters'
+        _get_action(action_name, data_dict)
+
+        return json.dumps(response_message)
+    else:
+        message = {
+            'success': True,
+            'message': 'Request sent, but email message was not sent.'
+        }
+
+        return json.dumps(message)
+
+
+def _org_admins_for_dataset(dataset_name):
+    package = _get_action('package_show', {'id': dataset_name})
+    owner_org = package['owner_org']
+    admins = []
+
+    org = _get_action('organization_show', {'id': owner_org})
+
+    for user in org['users']:
+        if user['capacity'] == 'admin':
+            db_user = model.User.get(user['id'])
+            data = {
+                'email': db_user.email,
+                'fullname': db_user.fullname or db_user.name
+            }
+            admins.append(data)
+
+    return admins
+
+
+requestdata_send_request.add_url_rule(u'/', view_func=send_request, methods=(u'GET', u'POST',))

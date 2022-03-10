@@ -10,6 +10,8 @@ from ckanext.requestdata.logic import auth
 from ckanext.requestdata import helpers
 from ckanext.requestdata.logic import validators
 from ckanext.requestdata.views import user as user
+from ckanext.requestdata.views import organization as organization
+from ckanext.requestdata.views import request_data as request_data
 
 log = logging.getLogger(__name__)
 
@@ -52,8 +54,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
         package_controller = \
             'ckanext.requestdata.controllers.package:PackageController'
-        # user_controller = \
-        #     'ckanext.requestdata.controllers.user:UserController'
+
         request_data_controller = 'ckanext.requestdata.controllers.' \
                                   'request_data:RequestDataController'
         admin_controller = \
@@ -67,9 +68,9 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
                     controller=package_controller,
                     action='create_metadata_package')
 
-        map.connect('requestdata_send_request', '/request_data',
-                    controller=request_data_controller,
-                    action='send_request')
+        # map.connect('requestdata_send_request', '/request_data',
+        #             controller=request_data_controller,
+        #             action='send_request')
 
         map.connect('ckanadmin_email', '/ckan-admin/email',
                     controller=admin_controller,
@@ -83,11 +84,6 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
                     '/ckan-admin/requests_data/download',
                     controller=admin_controller,
                     action='download_requests_data')
-
-        map.connect('requestdata_organization_requests',
-                    '/organization/requested_data/{id}',
-                    controller=organization_controller,
-                    action='requested_data', ckan_icon='list')
 
         map.connect('simple_search', '/dataset', controller=search_controller,
                     action='search_datasets')
@@ -250,5 +246,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     # IBlueprint
     def get_blueprint(self):
         return [
-            user.requestdata
+            user.requestdata,
+            organization.requestdata_organization_requests,
+            # request_data.requestdata_send_request
         ]
