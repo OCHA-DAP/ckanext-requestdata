@@ -1,25 +1,23 @@
+import logging
+
+import ckan.model as model
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
-import logging
-import ckan.model as model
-
 from ckan.common import c
-from ckanext.requestdata.model import setup as model_setup
+from ckanext.requestdata import helpers
 from ckanext.requestdata.logic import actions
 from ckanext.requestdata.logic import auth
-from ckanext.requestdata import helpers
 from ckanext.requestdata.logic import validators
-from ckanext.requestdata.views import user as user
-from ckanext.requestdata.views import organization as organization
-# from ckanext.requestdata.views import request_data as request_data
+from ckanext.requestdata.model import setup as model_setup
 from ckanext.requestdata.views import admin as admin
+from ckanext.requestdata.views import organization as organization
+from ckanext.requestdata.views import user as user
 
 log = logging.getLogger(__name__)
 
 
 class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     plugins.implements(plugins.IConfigurer)
-    plugins.implements(plugins.IRoutes, inherit=True)
     plugins.implements(plugins.IConfigurable)
     plugins.implements(plugins.IActions)
     plugins.implements(plugins.IAuthFunctions)
@@ -48,43 +46,6 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         schema.update(email_body)
 
         return schema
-
-    # IRoutes
-
-    def before_map(self, map):
-
-        package_controller = \
-            'ckanext.requestdata.controllers.package:PackageController'
-
-        # admin_controller = \
-        #     'ckanext.requestdata.controllers.admin:AdminController'
-        search_controller = \
-            'ckanext.requestdata.controllers.search:SearchController'
-
-        map.connect('/dataset/new',
-                    controller=package_controller,
-                    action='create_metadata_package')
-
-        # map.connect('ckanadmin_email', '/ckan-admin/email',
-        #             controller=admin_controller,
-        #             action='email', ckan_icon='envelope-alt')
-        #
-        # map.connect('ckanadmin_requests_data', '/ckan-admin/requests_data',
-        #             controller=admin_controller,
-        #             action='requests_data', ckan_icon='list')
-
-        # map.connect('download_requests_data',
-        #             '/ckan-admin/requests_data/download',
-        #             controller=admin_controller,
-        #             action='download_requests_data')
-
-        map.connect('simple_search', '/dataset', controller=search_controller,
-                    action='search_datasets')
-
-        map.connect('search', '/search', controller=search_controller,
-                    action='search_datasets')
-
-        return map
 
     # IConfigurable
 
@@ -241,6 +202,5 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         return [
             user.requestdata,
             organization.requestdata_organization_requests,
-            # request_data.requestdata_send_request
             admin.requestdata_ckanadmin
         ]
