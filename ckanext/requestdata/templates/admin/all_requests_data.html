@@ -3,7 +3,7 @@
 {% import 'macros/form.html' as form %}
 
 {% block primary %}
-  {% set service_url = h.url_for('download_requests_data') %}
+  {% set service_url = h.url_for('requestdata_ckanadmin.download_requests_data') %}
   {% set csv = '?format=csv'%}
   {% set json = '?format=json'%}
   {% if organizations %}
