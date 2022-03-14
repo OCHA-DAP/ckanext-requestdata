@@ -12,6 +12,7 @@ from ckanext.requestdata.model import setup as model_setup
 from ckanext.requestdata.views import admin as admin
 from ckanext.requestdata.views import organization as organization
 from ckanext.requestdata.views import user as user
+from six import text_type
 
 log = logging.getLogger(__name__)
 
@@ -39,9 +40,9 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         ignore_missing = toolkit.get_validator('ignore_missing')
 
         email_body = {}
-        email_body.update({'email_header': [ignore_missing, unicode],
-                           'email_body': [ignore_missing, unicode],
-                           'email_footer': [ignore_missing, unicode]})
+        email_body.update({'email_header': [ignore_missing, text_type],
+                           'email_body': [ignore_missing, text_type],
+                           'email_footer': [ignore_missing, text_type]})
 
         schema.update(email_body)
 

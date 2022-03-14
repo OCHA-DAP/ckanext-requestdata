@@ -1,24 +1,30 @@
 import json
+
 from flask import Blueprint
 from paste.deploy.converters import asbool
-from pylons import config
+
 import ckan.lib.helpers as h
+import ckan.logic as logic
 from ckan import authz
-from ckan import logic, model
-from ckan.common import g, c, _, request
-from ckan.lib import base
+from ckan import model
 from ckan.plugins import toolkit
 from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
 from ckanext.requestdata import helpers
 from ckanext.requestdata.emailer import send_email
 
-get_action = toolkit.get_action
 NotFound = logic.NotFound
-NotAuthorized = logic.NotAuthorized
-ValidationError = logic.ValidationError
+NotAuthorized = toolkit.NotAuthorized
+ValidationError = toolkit.ValidationError
 
-abort = base.abort
-# BaseController = base.BaseController
+abort = toolkit.abort
+g = toolkit.g
+_ = toolkit._
+request = toolkit.request
+h = toolkit.h
+_check_access = toolkit.check_access
+__get_action = toolkit.get_action
+config = toolkit.config
+render = toolkit.render
 
 requestdata = Blueprint(u'requestdata', __name__, url_prefix=u'/user/my_requested_data')
 
@@ -27,13 +33,13 @@ def _get_context():
     return {
         'model': model,
         'session': model.Session,
-        'user': c.user or c.author,
-        'auth_user_obj': c.userobj
+        'user': g.user,
+        'auth_user_obj': g.userobj
     }
 
 
 def _get_action(action, data_dict):
-    return toolkit.get_action(action)(_get_context(), data_dict)
+    return __get_action(action)(_get_context(), data_dict)
 
 
 def my_requested_data(id):
@@ -53,9 +59,9 @@ def my_requested_data(id):
     except NotAuthorized:
         abort(403, _('Not authorized to see this page.'))
 
-    c.is_myself = id == c.user
+    g.is_myself = id == g.user
 
-    if not c.is_myself:
+    if not g.is_myself:
         abort(403, _('Not authorized to see this page.'))
 
     order_by = request.query_string
@@ -66,7 +72,7 @@ def my_requested_data(id):
     order = 'last_request_created_at'
     current_order_name = 'Most Recent'
 
-    if order_by is not '':
+    if order_by != '':
         if 'shared' in order_by:
             order = 'shared'
             current_order_name = 'Sharing Rate'
@@ -86,18 +92,15 @@ def my_requested_data(id):
             order = 'last_request_created_at'
 
         for item in requests:
-            package = \
-                _get_action('package_show', {'id': item['package_id']})
-            count = _get_action('requestdata_request_data_counters_get',
-                                {'package_id': item['package_id']})
+            package = _get_action('package_show', {'id': item['package_id']})
+            count = _get_action('requestdata_request_data_counters_get', {'package_id': item['package_id']})
             item['title'] = package['title']
             item['shared'] = count.shared
             item['requests'] = count.requests
 
     for item in requests:
         try:
-            package = \
-                _get_action('package_show', {'id': item['package_id']})
+            package = _get_action('package_show', {'id': item['package_id']})
             package_maintainers_ids = package['maintainer'].split(',')
             item['title'] = package['title']
         except NotFound as e:
@@ -127,8 +130,7 @@ def my_requested_data(id):
 
     if order == 'last_request_created_at':
         for dataset in requests_archive:
-            created_at = \
-                dataset.get('requests_archived')[0].get('created_at')
+            created_at = dataset.get('requests_archived')[0].get('created_at')
             data = {
                 'last_request_created_at': created_at
             }
@@ -136,9 +138,7 @@ def my_requested_data(id):
 
     if order:
         requests_archive = \
-            sorted(requests_archive,
-                   key=lambda x: x[order],
-                   reverse=reverse)
+            sorted(requests_archive, key=lambda x: x[order], reverse=reverse)
 
     extra_vars = {
         'requests_new': requests_new,
@@ -161,20 +161,20 @@ def my_requested_data(id):
     }
     _setup_template_variables(_get_context(), data_dict)
 
-    return toolkit.render('requestdata/my_requested_data.html', extra_vars)
+    return render('requestdata/my_requested_data.html', extra_vars)
 
 
 def _setup_template_variables(context, data_dict):
-    c.is_sysadmin = authz.is_sysadmin(c.user)
+    g.is_sysadmin = authz.is_sysadmin(g.user)
     try:
-        user_dict = get_action('user_show')(context, data_dict)
+        user_dict = __get_action('user_show')(context, data_dict)
     except NotFound:
         abort(404, _('User not found'))
     except NotAuthorized:
         abort(403, _('Not authorized to see this page'))
 
-    c.user_dict = user_dict
-    c.about_formatted = h.render_markdown(user_dict['about'])
+    g.user_dict = user_dict
+    g.about_formatted = h.render_markdown(user_dict['about'])
 
 
 def handle_new_request_action(username, request_action):
@@ -192,7 +192,7 @@ def handle_new_request_action(username, request_action):
 
     '''
 
-    data = toolkit.request.form.to_dict()
+    data = request.form.to_dict()
 
     if request_action == 'reply':
         reply_email = data.get('email')
@@ -308,7 +308,7 @@ def handle_open_request_action(username, request_action):
 
     '''
 
-    data = toolkit.request.form.to_dict()
+    data = request.form.to_dict()
     if 'data_shared' in data:
         data['data_shared'] = asbool(data['data_shared'])
     data_dict = {

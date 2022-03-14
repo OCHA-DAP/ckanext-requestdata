@@ -2,23 +2,27 @@ from collections import Counter
 
 from flask import Blueprint
 
-import ckan.lib.plugins
+import ckan.logic as logic
 import ckanext.hdx_org_group.helpers.org_meta_dao as org_meta_dao
 import ckanext.hdx_org_group.helpers.organization_helper as helper
-from ckan import logic, model
-from ckan.common import c, g, _
-from ckan.lib import base
+from ckan import model
 from ckan.plugins import toolkit
 from ckan.views.group import _setup_template_variables as _setup_template_variables
 from ckanext.requestdata import helpers
 
-get_action = logic.get_action
 NotFound = logic.NotFound
-NotAuthorized = logic.NotAuthorized
-ValidationError = logic.ValidationError
-lookup_group_plugin = ckan.lib.plugins.lookup_group_plugin
-abort = base.abort
-render = base.render
+NotAuthorized = toolkit.NotAuthorized
+ValidationError = toolkit.ValidationError
+
+abort = toolkit.abort
+g = toolkit.g
+_ = toolkit._
+request = toolkit.request
+h = toolkit.h
+_check_access = toolkit.check_access
+__get_action = toolkit.get_action
+config = toolkit.config
+render = toolkit.render
 
 GROUP_TYPES = ['organization']
 
@@ -36,7 +40,7 @@ def _get_context():
 
 
 def _get_action(action, data_dict):
-    return toolkit.get_action(action)(_get_context(), data_dict)
+    return __get_action(action)(_get_context(), data_dict)
 
 
 def requested_data(id):
@@ -58,9 +62,9 @@ def requested_data(id):
         'user': g.user
     }
 
-    c.group_dict = g.group_dict = _get_action('organization_show', {'id': id})
+    g.group_dict = _get_action('organization_show', {'id': id})
     group_type = 'organization'
-    request_params = toolkit.request.form.to_dict()
+    request_params = request.form.to_dict()
 
     filtered_maintainers = []
     reverse = True
@@ -245,7 +249,6 @@ def requested_data(id):
     except NotAuthorized as e:
         abort(403, _('Not authorized to see this page'))
     helper.org_add_last_updated_field([org_meta.org_dict])
-    c.org_meta = org_meta
     g.org_meta = org_meta
     if org_meta.is_custom:
         return render('requestdata/custom_organization_requested_data.html', extra_vars)

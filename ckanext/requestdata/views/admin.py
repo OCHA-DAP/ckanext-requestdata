@@ -1,33 +1,33 @@
-try:
-    # CKAN 2.7 and later
-    from ckan.common import config
-except ImportError:
-    # CKAN 2.6 and earlier
-    from pylons import config
 import json
-from cStringIO import StringIO
 from collections import Counter
-from flask import make_response
+
 import six
 import unicodecsv as csv
 from flask import Blueprint
+from flask import make_response
+from six import StringIO
 from sqlalchemy.sql.expression import or_
 
-import ckan.lib.base as base
-import ckan.lib.helpers as h
 import ckan.lib.maintain as maintain
 import ckan.logic as logic
 import ckanext.requestdata.helpers as requestdata_helper
 from ckan import model
-from ckan.common import c, g, _
-from ckan.common import request
 from ckan.plugins import toolkit
 from ckanext.requestdata import helpers
 
 NotFound = logic.NotFound
-NotAuthorized = logic.NotAuthorized
+NotAuthorized = toolkit.NotAuthorized
+ValidationError = toolkit.ValidationError
 
-abort = base.abort
+abort = toolkit.abort
+g = toolkit.g
+_ = toolkit._
+request = toolkit.request
+h = toolkit.h
+_check_access = toolkit.check_access
+__get_action = toolkit.get_action
+config = toolkit.config
+render = toolkit.render
 
 requestdata_ckanadmin = Blueprint(u'requestdata_ckanadmin', __name__, url_prefix=u'/ckan-admin')
 
@@ -36,22 +36,22 @@ def _get_context():
     return {
         'model': model,
         'session': model.Session,
-        'user': g.user or g.author,
-        'auth_user_obj': c.userobj
+        'user': g.user,
+        'auth_user_obj': g.userobj
     }
 
 
 def _get_action(action, data_dict):
-    return toolkit.get_action(action)(_get_context(), data_dict)
+    return __get_action(action)(_get_context(), data_dict)
 
 
 def _check_request_data_access():
     context = {'model': model, 'user': g.user, 'auth_user_obj': g.userobj}
     try:
-        logic.check_access('hdx_request_data_admin_list', context, {})
-    except logic.NotAuthorized:
-        base.abort(403, _('Need to be request data administrator to administer'))
-    c.revision_change_state_allowed = True
+        _check_access('hdx_request_data_admin_list', context, {})
+    except NotAuthorized:
+        abort(403, _('Need to be request data administrator to administer'))
+    # c.revision_change_state_allowed = True
 
 
 def email():
@@ -61,25 +61,25 @@ def email():
         :returns template
     '''
     context = {'model': model,
-               'user': c.user, 'auth_user_obj': c.userobj}
+               'user': g.user, 'auth_user_obj': g.userobj}
     try:
-        logic.check_access('config_option_update', context, {})
-    except logic.NotAuthorized:
-        base.abort(403, _('Need to be sysadmin to access this page'))
+        _check_access('config_option_update', context, {})
+    except NotAuthorized:
+        abort(403, _('Need to be sysadmin to access this page'))
 
-    if toolkit.request.method == 'POST':
+    if request.method == 'POST':
         try:
-            data_dict = toolkit.request.form.to_dict()
+            data_dict = request.form.to_dict()
             if data_dict.get('save'):
                 del data_dict['save']
                 data = _get_action('config_option_update', data_dict)
                 h.flash_success(_('Successfully updated.'))
-        except logic.ValidationError as e:
+        except ValidationError as e:
             errors = e.error_dict
             error_summary = e.error_summary
             vars = {'data': data_dict, 'errors': errors,
                     'error_summary': error_summary}
-            return base.render('admin/email.html', extra_vars=vars)
+            return render('admin/email.html', extra_vars=vars)
 
         h.redirect_to(u'requestdata_ckanadmin.email')
 
@@ -89,7 +89,7 @@ def email():
         data[key] = config.get(key)
 
     vars = {'data': data, 'errors': {}}
-    return toolkit.render('admin/email.html', extra_vars=vars)
+    return render('admin/email.html', extra_vars=vars)
 
 
 def requests_data():
@@ -125,11 +125,11 @@ def requests_data():
     extra_vars = {
         'organizations': orgs,
         'organizations_for_filters': sorted(((o['id'], o) for o in orgs_map.values()),
-                                            key=lambda (org_id, o): o['requests'], reverse=True),
+                                            key=lambda org_id, o: o['requests'], reverse=True),
         'total_requests_counters': total_requests_counters
     }
 
-    ret = toolkit.render('admin/all_requests_data.html', extra_vars)
+    ret = render('admin/all_requests_data.html', extra_vars)
 
     return ret
 
@@ -144,7 +144,7 @@ def __find_packages(package_ids):
     }
     query_params = {'fq': query_string}
     query_params.update(basic_query_params)
-    search_result = logic.get_action('package_search')({}, query_params)
+    search_result = _get_action('package_search')({}, query_params)
     return search_result
 
 
@@ -494,7 +494,7 @@ def old_requests_data():
 
         org['requests_archive'] = sorted(org['requests_archive'], key=lambda x: x[order], reverse=reverse)
 
-    organizations_for_filters = sorted(six.iteritems(organizations_for_filters), key=lambda (x, y): y['requests'],
+    organizations_for_filters = sorted(six.iteritems(organizations_for_filters), key=lambda x, y: y['requests'],
                                        reverse=True)
 
     total_requests_counters = _get_action('requestdata_request_data_counters_get_all', {})
@@ -504,7 +504,7 @@ def old_requests_data():
         'total_requests_counters': total_requests_counters
     }
 
-    return toolkit.render('admin/all_requests_data.html', extra_vars)
+    return render('admin/all_requests_data.html', extra_vars)
 
 
 def download_requests_data():

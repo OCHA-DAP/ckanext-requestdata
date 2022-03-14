@@ -1,7 +1,7 @@
 import datetime
-
+import logging
 from ckan.plugins import toolkit
-from ckan.logic import check_access, NotFound
+import ckan.logic as logic
 import ckan.lib.navl.dictization_functions as df
 from ckan.model.user import User
 from ckanext.requestdata.logic import schema
@@ -9,7 +9,12 @@ from ckanext.requestdata.model import ckanextRequestdata, \
     ckanextUserNotification, ckanextMaintainers, ckanextRequestDataCounters
 from ckanext.requestdata import helpers
 
-import logging
+NotAuthorized = toolkit.NotAuthorized
+ValidationError = toolkit.ValidationError
+NotFound = logic.NotFound
+
+_check_access = toolkit.check_access
+__get_action = toolkit.get_action
 
 log = logging.getLogger(__name__)
 
@@ -37,13 +42,13 @@ def request_create(context, data_dict):
 
     '''
 
-    check_access('requestdata_request_create', context, data_dict)
+    _check_access('requestdata_request_create', context, data_dict)
 
     data, errors = df.validate(data_dict, schema.request_create_schema(),
                                context)
 
     if errors:
-        raise toolkit.ValidationError(errors)
+        raise ValidationError(errors)
 
     sender_name = data.get('sender_name')
     organization = data.get('organization')
@@ -51,7 +56,7 @@ def request_create(context, data_dict):
     message_content = data.get('message_content')
     package_id = data.get('package_id')
 
-    package = toolkit.get_action('package_show')(context, {'id': package_id})
+    package = __get_action('package_show')(context, {'id': package_id})
 
     sender_user_id = User.get(context['user']).id
 
@@ -78,7 +83,7 @@ def request_create(context, data_dict):
         for id in maintainers:
             try:
                 if is_hdx:
-                    main_ids = toolkit.get_action('user_show')(context, {'id': id})
+                    main_ids = __get_action('user_show')(context, {'id': id})
                     user = User.get(main_ids['id'])
                 else:
                     user = User.get(id)
@@ -89,9 +94,7 @@ def request_create(context, data_dict):
                 maintainers_list.append(data)
             except NotFound:
                 pass
-
     out = ckanextMaintainers.insert_all(maintainers_list, requestdata.id)
-
     return out
 
 
@@ -106,23 +109,15 @@ def request_show(context, data_dict):
 
     '''
 
-    data, errors = df.validate(data_dict, schema.request_show_schema(),
-                               context)
-
+    data, errors = df.validate(data_dict, schema.request_show_schema(), context)
     if errors:
-        raise toolkit.ValidationError(errors)
-
-    check_access('requestdata_request_show', context, data_dict)
-
+        raise ValidationError(errors)
+    _check_access('requestdata_request_show', context, data_dict)
     id = data.get('id')
-
     requestdata = ckanextRequestdata.get(id=id)
-
     if requestdata is None:
         raise NotFound('Request with provided \'id\' cannot be found')
-
     out = requestdata.as_dict()
-
     return out
 
 
@@ -134,8 +129,7 @@ def request_list_for_sysadmin(context, data_dict):
 
     '''
 
-    check_access('hdx_request_data_admin_list',
-                 context, data_dict)
+    _check_access('hdx_request_data_admin_list', context, data_dict)
 
     requests = ckanextRequestdata.search()
 
@@ -158,25 +152,22 @@ def request_list_for_organization(context, data_dict):
 
     '''
 
-    data, errors = df.validate(data_dict,
-                               schema.request_list_for_organization_schema(),
-                               context)
+    data, errors = df.validate(data_dict, schema.request_list_for_organization_schema(), context)
 
     if errors:
-        raise toolkit.ValidationError(errors)
+        raise ValidationError(errors)
 
-    check_access('requestdata_request_list_for_organization',
-                 context, data_dict)
+    _check_access('requestdata_request_list_for_organization', context, data_dict)
 
     org_id = data.get('org_id')
-    org = toolkit.get_action('organization_show')(context, {'id': org_id})
+    org = __get_action('organization_show')(context, {'id': org_id})
 
     data_dict = {
         'fq': 'organization:' + org['name'],
         'rows': 1000000
     }
 
-    packages = toolkit.get_action('package_search')(context, data_dict)
+    packages = __get_action('package_search')(context, data_dict)
     total_requests = []
     for package in packages['results']:
         data = {
@@ -200,7 +191,7 @@ def request_list_for_current_user(context, data_dict):
 
     '''
 
-    check_access('requestdata_request_list_for_current_user',
+    _check_access('requestdata_request_list_for_current_user',
                  context, data_dict)
 
     model = context['model']
@@ -232,15 +223,15 @@ def request_patch(context, data_dict):
     # Exclude fields from the schema that are not in data_dict
     for field in fields:
         if field not in data_dict.keys() and \
-                (field != 'id' and field != 'package_id'):
+            (field != 'id' and field != 'package_id'):
             request_patch_schema.pop(field)
 
     data, errors = df.validate(data_dict, request_patch_schema, context)
 
     if errors:
-        raise toolkit.ValidationError(errors)
+        raise ValidationError(errors)
 
-    check_access('requestdata_request_patch', context, data_dict)
+    _check_access('requestdata_request_patch', context, data_dict)
 
     id = data.get('id')
     package_id = data.get('package_id')
@@ -337,7 +328,7 @@ def notification_change(context, data_dict):
                                schema.notification_change_schema(),
                                context)
     if errors:
-        raise toolkit.ValidationError(errors)
+        raise ValidationError(errors)
 
     user_id = data.get('user_id')
     notification = ckanextUserNotification.get(package_maintainer_id=user_id)
@@ -363,11 +354,11 @@ def increment_request_data_counters(context, data_dict):
                                schema.increment_request_counters_schema(),
                                context)
     if errors:
-        raise toolkit.ValidationError(errors)
+        raise ValidationError(errors)
 
     flag = data.get('flag')
     package_id = data.get('package_id')
-    package = toolkit.get_action('package_show')(context, {'id': package_id})
+    package = __get_action('package_show')(context, {'id': package_id})
     data = {
         'package_id': package_id,
         'org_id': package['owner_org']
@@ -443,34 +434,12 @@ def request_data_counters_get_by_org(context, data_dict):
 
 
 def request_update(context, data_dict):
-    # data, errors = df.validate(data_dict, schema.request_show_schema(), context)
-    #
-    # if errors:
-    #     raise toolkit.ValidationError(errors)
-    #
-    # check_access('requestdata_request_show', context, data_dict)
-
-    # package_id = data_dict.get('package_id')
-    #
-    # rq_list = ckanextRequestdata.search(package_id=package_id)
-    # counters_list = ckanextRequestDataCounters.filter(package_id=package_id).all()
-    # print "asd"
     pass
 
 
-# @toolkit.side_effect_free
 def request_delete(context, data_dict):
-    # data, errors = df.validate(data_dict, schema.request_show_schema(), context)
-    #
-    # if errors:
-    #     raise toolkit.ValidationError(errors)
-
-    # check_access('requestdata_request_show', context, data_dict)
-
     id = data_dict.get('id')
-
     requestdata = ckanextRequestdata.get(id=id)
-
     if requestdata is None:
         raise NotFound('Request with provided \'id\' cannot be found')
 
@@ -483,7 +452,6 @@ def request_delete(context, data_dict):
         session.flush()
 
 
-# @toolkit.side_effect_free
 def maintainer_delete(context, data_dict):
     maintainer = ckanextMaintainers.get(id=data_dict.get('id'))
 
@@ -498,7 +466,6 @@ def maintainer_delete(context, data_dict):
         session.flush()
 
 
-# @toolkit.side_effect_free
 def counter_delete(context, data_dict):
     counter = ckanextRequestDataCounters.get(id=data_dict.get('id'))
 
@@ -513,29 +480,20 @@ def counter_delete(context, data_dict):
         session.flush()
 
 
-# @toolkit.side_effect_free
 def request_delete_by_package_id(context, data_dict):
-
-    check_access('requestdata_request_delete_by_package_id', context, data_dict)
-
+    _check_access('requestdata_request_delete_by_package_id', context, data_dict)
     package_id = data_dict.get('package_id')
     rq_list = ckanextRequestdata.search(package_id=package_id)
-
     for rq in rq_list:
-
         request_id = rq.id
-
         counters_list = ckanextRequestDataCounters.filter(package_id=package_id).all()
         for c in counters_list:
-            # toolkit.get_action('requestdata_counter_delete')(context, {'id': c.id})
             counter_delete(context, {'id': c.id})
 
         maintainers_list = ckanextMaintainers.search(request_data_id=request_id)
         for maintainer in maintainers_list:
-            # toolkit.get_action('requestdata_maintainer_delete')(context, {'id': maintainer.id})
             maintainer_delete(context, {'id': maintainer.id})
 
-        # toolkit.get_action('requestdata_request_delete')(context, {'id': request_id})
         request_delete(context, {'id': request_id})
 
         log.info('Request data was deleted, with id ' + str(rq.id))
