@@ -1,40 +1,37 @@
-import timeago
 import datetime
 import itertools
-from operator import itemgetter
 import json
-
+from operator import itemgetter
+from six import string_types
+import timeago
 from paste.deploy.converters import asbool
 
-from ckan import model, logic
-from ckan.common import c, _, request
-from ckan.lib import base
-from ckan.plugins import toolkit
+from ckan import model
 from ckan.model.user import User
+from ckan.plugins import toolkit as tk
 
-try:
-    # CKAN 2.7 and later
-    from ckan.common import config
-except ImportError:
-    # CKAN 2.6 and earlier
-    from pylons import config
-
-NotFound = logic.NotFound
-NotAuthorized = logic.NotAuthorized
-ValidationError = logic.ValidationError
+NotFound = tk.ObjectNotFound
+NotAuthorized = tk.NotAuthorized
+ValidationError = tk.ValidationError
+config = tk.config
+g = tk.g
+_ = tk._
+request = tk.request
+get_action = tk.get_action
+abort = tk.abort
 
 
 def _get_context():
     return {
         'model': model,
         'session': model.Session,
-        'user': c.user or c.author,
-        'auth_user_obj': c.userobj
+        'user': g.user,
+        'auth_user_obj': g.userobj
     }
 
 
 def _get_action(action, data_dict):
-    return toolkit.get_action(action)(_get_context(), data_dict)
+    return get_action(action)(_get_context(), data_dict)
 
 
 def time_ago_from_datetime(date):
@@ -54,7 +51,7 @@ def time_ago_from_datetime(date):
 
     if isinstance(date, datetime.date):
         date = date.strftime("%Y-%m-%d %H:%M:%S")
-    elif isinstance(date, str):
+    elif isinstance(date, string_types):
         date = date[:-7]
 
     return timeago.format(date, now)
@@ -64,9 +61,9 @@ def get_package_title(package_id):
     try:
         package = _get_action('package_show', {'id': package_id})
     except NotAuthorized:
-        base.abort(403, _('Not authorized to see this package.'))
+        abort(403, _('Not authorized to see this package.'))
     except NotFound:
-        base.abort(403, _('Package not found.'))
+        abort(403, _('Package not found.'))
 
     return package['title']
 
@@ -118,7 +115,6 @@ def group_archived_requests_by_dataset(requests):
 
     for key, group in itertools.groupby(sorted_requests,
                                         key=lambda x: x['package_id']):
-
         requests = list(group)
         item_shared = requests[0].get('shared')
         item_requests = requests[0].get('requests')
@@ -160,14 +156,13 @@ def is_hdx_portal():
 
 
 def is_current_user_a_maintainer(maintainers):
-    if c.user and maintainers:
-        current_user = _get_action('user_show', {'id': c.user})
+    if g.user and maintainers:
+        current_user = _get_action('user_show', {'id': g.user})
         user_id = current_user.get('id')
         user_name = current_user.get('name')
 
         if user_id in maintainers or user_name in maintainers:
             return True
-
     return False
 
 

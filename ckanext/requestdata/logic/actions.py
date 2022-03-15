@@ -1,7 +1,6 @@
 import datetime
 import logging
-from ckan.plugins import toolkit
-import ckan.logic as logic
+import ckan.plugins.toolkit as tk
 import ckan.lib.navl.dictization_functions as df
 from ckan.model.user import User
 from ckanext.requestdata.logic import schema
@@ -9,12 +8,12 @@ from ckanext.requestdata.model import ckanextRequestdata, \
     ckanextUserNotification, ckanextMaintainers, ckanextRequestDataCounters
 from ckanext.requestdata import helpers
 
-NotAuthorized = toolkit.NotAuthorized
-ValidationError = toolkit.ValidationError
-NotFound = logic.NotFound
+NotAuthorized = tk.NotAuthorized
+ValidationError = tk.ValidationError
+NotFound = tk.ObjectNotFound
 
-_check_access = toolkit.check_access
-__get_action = toolkit.get_action
+_check_access = tk.check_access
+__get_action = tk.get_action
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +97,7 @@ def request_create(context, data_dict):
     return out
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def request_show(context, data_dict):
     '''Return the metadata of a requestdata.
 
@@ -121,7 +120,7 @@ def request_show(context, data_dict):
     return out
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def request_list_for_sysadmin(context, data_dict):
     '''Returns a list of all requests.
 
@@ -141,7 +140,7 @@ def request_list_for_sysadmin(context, data_dict):
     return out
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def request_list_for_organization(context, data_dict):
     '''Returns a list of requests for specified organization.
 
@@ -180,7 +179,7 @@ def request_list_for_organization(context, data_dict):
     return total_requests
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def request_list_for_current_user(context, data_dict):
     '''Returns a list of requests.
 
@@ -293,7 +292,7 @@ def notification_create(context, data_dict):
     return notifications
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def notification_for_current_user(context, data_dict):
     '''Returns a notification for logged in user
 
@@ -312,7 +311,7 @@ def notification_for_current_user(context, data_dict):
         return is_notified
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def notification_change(context, data_dict):
     '''
         Change the notification status to seen
@@ -387,7 +386,7 @@ def increment_request_data_counters(context, data_dict):
         return data_request
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def request_data_counters_get(context, data_dict):
     '''
         Returns a counters for particular request data
@@ -402,7 +401,7 @@ def request_data_counters_get(context, data_dict):
     return counters
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def request_data_counters_get_all(context, data_dict):
     '''
         Returns a counters for particular request data
@@ -416,7 +415,7 @@ def request_data_counters_get_all(context, data_dict):
     return counters
 
 
-@toolkit.side_effect_free
+@tk.side_effect_free
 def request_data_counters_get_by_org(context, data_dict):
     '''
         Return counters for requests that belong to particular organization

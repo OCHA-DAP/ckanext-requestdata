@@ -1,6 +1,6 @@
 import json
 from collections import Counter
-
+import ckan.logic as logic
 import six
 import unicodecsv as csv
 from flask import Blueprint
@@ -9,25 +9,24 @@ from six import StringIO
 from sqlalchemy.sql.expression import or_
 
 import ckan.lib.maintain as maintain
-import ckan.logic as logic
 import ckanext.requestdata.helpers as requestdata_helper
 from ckan import model
-from ckan.plugins import toolkit
+from ckan.plugins import toolkit as tk
 from ckanext.requestdata import helpers
 
-NotFound = logic.NotFound
-NotAuthorized = toolkit.NotAuthorized
-ValidationError = toolkit.ValidationError
+NotFound = tk.ObjectNotFound
+NotAuthorized = tk.NotAuthorized
+ValidationError = tk.ValidationError
 
-abort = toolkit.abort
-g = toolkit.g
-_ = toolkit._
-request = toolkit.request
-h = toolkit.h
-_check_access = toolkit.check_access
-__get_action = toolkit.get_action
-config = toolkit.config
-render = toolkit.render
+abort = tk.abort
+g = tk.g
+_ = tk._
+request = tk.request
+h = tk.h
+_check_access = tk.check_access
+__get_action = tk.get_action
+config = tk.config
+render = tk.render
 
 requestdata_ckanadmin = Blueprint(u'requestdata_ckanadmin', __name__, url_prefix=u'/ckan-admin')
 

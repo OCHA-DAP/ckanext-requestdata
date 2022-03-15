@@ -1,7 +1,10 @@
-from ckan.plugins.toolkit import _
-from ckan.plugins.toolkit import get_action
-from ckan import logic
+import ckan.plugins.toolkit as tk
 import ckan.authz as authz
+
+_ = tk._
+get_action = tk.get_action
+NotFound = tk.ObjectNotFound
+ValidationError = tk.ValidationError
 
 
 def request_create(context, data_dict):
@@ -35,8 +38,8 @@ def request_list_for_organization(context, data_dict):
 
     try:
         organization = get_action('organization_show')(context, payload)
-    except logic.NotFound:
-        raise logic.ValidationError('Organization not found.')
+    except NotFound:
+        raise ValidationError('Organization not found.')
 
     for user in organization['users']:
 

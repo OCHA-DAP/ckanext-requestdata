@@ -2,27 +2,26 @@ from collections import Counter
 
 from flask import Blueprint
 
-import ckan.logic as logic
 import ckanext.hdx_org_group.helpers.org_meta_dao as org_meta_dao
 import ckanext.hdx_org_group.helpers.organization_helper as helper
 from ckan import model
-from ckan.plugins import toolkit
+from ckan.plugins import toolkit as tk
 from ckan.views.group import _setup_template_variables as _setup_template_variables
 from ckanext.requestdata import helpers
 
-NotFound = logic.NotFound
-NotAuthorized = toolkit.NotAuthorized
-ValidationError = toolkit.ValidationError
+NotFound = tk.ObjectNotFound
+NotAuthorized = tk.NotAuthorized
+ValidationError = tk.ValidationError
 
-abort = toolkit.abort
-g = toolkit.g
-_ = toolkit._
-request = toolkit.request
-h = toolkit.h
-_check_access = toolkit.check_access
-__get_action = toolkit.get_action
-config = toolkit.config
-render = toolkit.render
+abort = tk.abort
+g = tk.g
+_ = tk._
+request = tk.request
+h = tk.h
+_check_access = tk.check_access
+__get_action = tk.get_action
+config = tk.config
+render = tk.render
 
 GROUP_TYPES = ['organization']
 

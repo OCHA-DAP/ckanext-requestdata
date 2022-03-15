@@ -3,28 +3,26 @@ import json
 from flask import Blueprint
 from paste.deploy.converters import asbool
 
-import ckan.lib.helpers as h
-import ckan.logic as logic
 from ckan import authz
 from ckan import model
-from ckan.plugins import toolkit
+from ckan.plugins import toolkit as tk
 from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
 from ckanext.requestdata import helpers
 from ckanext.requestdata.emailer import send_email
 
-NotFound = logic.NotFound
-NotAuthorized = toolkit.NotAuthorized
-ValidationError = toolkit.ValidationError
+NotFound = tk.ObjectNotFound
+NotAuthorized = tk.NotAuthorized
+ValidationError = tk.ValidationError
 
-abort = toolkit.abort
-g = toolkit.g
-_ = toolkit._
-request = toolkit.request
-h = toolkit.h
-_check_access = toolkit.check_access
-__get_action = toolkit.get_action
-config = toolkit.config
-render = toolkit.render
+abort = tk.abort
+g = tk.g
+_ = tk._
+request = tk.request
+h = tk.h
+_check_access = tk.check_access
+__get_action = tk.get_action
+config = tk.config
+render = tk.render
 
 requestdata = Blueprint(u'requestdata', __name__, url_prefix=u'/user/my_requested_data')
 

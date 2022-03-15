@@ -1,8 +1,9 @@
 from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
 from paste.deploy.converters import asbool
+import ckan.plugins.toolkit as tk
 
-from ckan.common import _
-from ckan.plugins.toolkit import get_action
+_ = tk._
+get_action = tk.get_action
 
 
 def email_validator(key, data, errors, context):
