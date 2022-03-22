@@ -57,44 +57,47 @@ def request_create(context, data_dict):
 
     package = __get_action('package_show')(context, {'id': package_id})
 
-    sender_user_id = User.get(context['user']).id
+    if package.get('is_requestdata_type'):
+        sender_user_id = User.get(context['user']).id
 
-    if package.get('maintainer'):
-        maintainers = package['maintainer'].split(',')
+        if package.get('maintainer'):
+            maintainers = package['maintainer'].split(',')
+        else:
+            maintainers = None
+
+        data = {
+            'sender_name': sender_name,
+            'sender_user_id': sender_user_id,
+            'organization': organization,
+            'email_address': email_address,
+            'message_content': message_content,
+            'package_id': package_id
+        }
+
+        requestdata = ckanextRequestdata(**data)
+        requestdata.save()
+        maintainers_list = []
+        is_hdx = helpers.is_hdx_portal()
+
+        if maintainers:
+            for id in maintainers:
+                try:
+                    if is_hdx:
+                        main_ids = __get_action('user_show')(context, {'id': id})
+                        user = User.get(main_ids['id'])
+                    else:
+                        user = User.get(id)
+                    data = ckanextMaintainers()
+                    data.maintainer_id = user.id
+                    data.request_data_id = requestdata.id
+                    data.email = user.email
+                    maintainers_list.append(data)
+                except NotFound:
+                    pass
+        out = ckanextMaintainers.insert_all(maintainers_list, requestdata.id)
+        return out
     else:
-        maintainers = None
-
-    data = {
-        'sender_name': sender_name,
-        'sender_user_id': sender_user_id,
-        'organization': organization,
-        'email_address': email_address,
-        'message_content': message_content,
-        'package_id': package_id
-    }
-
-    requestdata = ckanextRequestdata(**data)
-    requestdata.save()
-    maintainers_list = []
-    is_hdx = helpers.is_hdx_portal()
-
-    if maintainers:
-        for id in maintainers:
-            try:
-                if is_hdx:
-                    main_ids = __get_action('user_show')(context, {'id': id})
-                    user = User.get(main_ids['id'])
-                else:
-                    user = User.get(id)
-                data = ckanextMaintainers()
-                data.maintainer_id = user.id
-                data.request_data_id = requestdata.id
-                data.email = user.email
-                maintainers_list.append(data)
-            except NotFound:
-                pass
-    out = ckanextMaintainers.insert_all(maintainers_list, requestdata.id)
-    return out
+        raise ValidationError('Dataset is not metadata only type')
 
 
 @tk.side_effect_free
@@ -358,32 +361,35 @@ def increment_request_data_counters(context, data_dict):
     flag = data.get('flag')
     package_id = data.get('package_id')
     package = __get_action('package_show')(context, {'id': package_id})
-    data = {
-        'package_id': package_id,
-        'org_id': package['owner_org']
-    }
+    if package.get('is_requestdata_type'):
+        data = {
+            'package_id': package_id,
+            'org_id': package['owner_org']
+        }
 
-    data_request = ckanextRequestDataCounters.get(package_id=package_id)
-    if data_request is None:
-        new_request = ckanextRequestDataCounters(**data)
-        new_request.requests = 1
-        new_request.save()
-        return new_request
+        data_request = ckanextRequestDataCounters.get(package_id=package_id)
+        if data_request is None:
+            new_request = ckanextRequestDataCounters(**data)
+            new_request.requests = 1
+            new_request.save()
+            return new_request
+        else:
+            if flag == 'request':
+                data_request.requests += 1
+            elif flag == 'replied':
+                data_request.replied += 1
+            elif flag == 'declined':
+                data_request.declined += 1
+            elif flag == 'shared':
+                data_request.shared += 1
+            elif flag == 'shared and replied':
+                data_request.shared += 1
+                data_request.replied += 1
+
+            data_request.save()
+            return data_request
     else:
-        if flag == 'request':
-            data_request.requests += 1
-        elif flag == 'replied':
-            data_request.replied += 1
-        elif flag == 'declined':
-            data_request.declined += 1
-        elif flag == 'shared':
-            data_request.shared += 1
-        elif flag == 'shared and replied':
-            data_request.shared += 1
-            data_request.replied += 1
-
-        data_request.save()
-        return data_request
+        raise ValidationError('Dataset is not metadata only type')
 
 
 @tk.side_effect_free
