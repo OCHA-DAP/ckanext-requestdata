@@ -143,7 +143,7 @@ def __find_packages(package_ids):
     }
     query_params = {'fq': query_string}
     query_params.update(basic_query_params)
-    search_result = _get_action('package_search')({}, query_params)
+    search_result = __get_action('package_search')({}, query_params)
     return search_result
 
 
@@ -315,8 +315,7 @@ def old_requests_data():
                 package = \
                     _get_action('package_show', {'id': x['package_id']})
                 count = \
-                    _get_action('requestdata_request_data_counters_get',
-                                {'package_id': x['package_id']})
+                    _get_action('requestdata_request_data_counters_get', {'package_id': x['package_id']})
                 if count:
                     x['shared'] = count.shared
                     x['requests'] = count.requests
