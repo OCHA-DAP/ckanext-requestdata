@@ -1,4 +1,4 @@
-'use strict';
+// 'use strict';
 
 /* handle-open-request
  *
@@ -9,19 +9,19 @@
 this.ckan.module('handle-open-request', function($) {
   var api = {
     get: function(action, params) {
-        var base_url = ckan.sandbox().client.endpoint
-        params = $.param(params)
-        var url = base_url + '/api/action/' + action + '?' + params
+        var base_url = ckan.sandbox().client.endpoint;
+        params = $.param(params);
+        var url = base_url + '/api/action/' + action + '?' + params;
 
-        return $.getJSON(url)
+        return $.getJSON(url);
     },
     post: function(action, data) {
-      var base_url = ckan.sandbox().client.endpoint
-      var url = base_url + '/api/action/' + action
+      var base_url = ckan.sandbox().client.endpoint;
+      var url = base_url + '/api/action/' + action;
 
-      return $.post(url, JSON.stringify(data), 'json')
+      return $.post(url, JSON.stringify(data), 'json');
     }
-  }
+  };
 
   function _showAlert(message, className, duration) {
     var alert = $('.request-message-alert');
@@ -38,59 +38,59 @@ this.ckan.module('handle-open-request', function($) {
 
   return {
     initialize: function() {
-      $.proxyAll(this, /_on/)
+      $.proxyAll(this, /_on/);
 
-      this.buttonClicked = false
+      this.buttonClicked = false;
 
-      this.el.on('click', this._onClick)
+      this.el.on('click', this._onClick);
     },
     _onClick: function(event) {
-      if (this.buttonClicked) return
+      if (this.buttonClicked) return;
 
-      var base_url = ckan.sandbox().client.endpoint
-      var url = base_url + this.options.action || ''
-      var payload = this.options.post_data || {}
+      var base_url = ckan.sandbox().client.endpoint;
+      var url = base_url + this.options.action || '';
+      var payload = this.options.post_data || {};
 
-      this.el.attr('disabled', 'disabled')
+      this.el.attr('disabled', 'disabled');
 
       this.buttonClicked = true;
 
       $.post(url, payload, 'json')
         .done(function(data) {
-          var className = ''
-          var message = ''
+          var className = '';
+          var message = '';
 
-          data = JSON.parse(data)
+          data = JSON.parse(data);
 
           if (data.success) {
             if (payload.data_shared === true) {
-              className = 'icon-thumbs-up'
+              className = 'icon-thumbs-up';
             } else {
-              className = 'icon-thumbs-down'
+              className = 'icon-thumbs-down';
             }
 
-            this._disableActionButtons(payload.data_shared)
+            this._disableActionButtons(payload.data_shared);
 
             if (this.options.refresh_on_success) {
               location.reload();
             }
           } else if (data.error && data.error.fields) {
             for (var key in data.error.fields) {
-              message += key + ': ' + data.error.fields[key] + '<br>'
+              message += key + ': ' + data.error.fields[key] + '<br>';
             }
 
-            _showAlert(message, 'alert-danger', 4000)
+            _showAlert(message, 'alert-danger', 4000);
 
-            this.el.removeAttr('disabled')
+            this.el.removeAttr('disabled');
           }
         }.bind(this))
-        .error(function(error) {
-          this.el.removeAttr('disabled')
-        }.bind(this))
+        .fail(function(error) {
+          this.el.removeAttr('disabled');
+        }.bind(this));
     },
     _disableActionButtons: function(data_shared) {
-      this.el.attr('disabled', 'disabled')
-      this.el.siblings('.btn').attr('disabled', 'disabled')
+      this.el.attr('disabled', 'disabled');
+      this.el.siblings('.btn').attr('disabled', 'disabled');
     }
-  }
-})
+  };
+});

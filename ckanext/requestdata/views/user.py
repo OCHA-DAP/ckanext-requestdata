@@ -345,5 +345,6 @@ def handle_open_request_action(username, request_action):
 
 requestdata.add_url_rule(u'/<id>', view_func=my_requested_data, methods=[u'GET'])
 
-requestdata.add_url_rule(u'/<username>/shared', view_func=handle_open_request_action_shared, methods=[u'GET'])
-requestdata.add_url_rule(u'/<username>/notshared', view_func=handle_open_request_action_notshared, methods=[u'GET'])
+requestdata.add_url_rule(u'/<username>/shared', view_func=handle_open_request_action_shared, methods=[u'GET', u'POST'])
+requestdata.add_url_rule(u'/<username>/notshared', view_func=handle_open_request_action_notshared,
+                         methods=[u'GET', u'POST'])
