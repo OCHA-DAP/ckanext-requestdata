@@ -26,7 +26,7 @@ render = tk.render
 GROUP_TYPES = ['organization']
 
 requestdata_organization_requests = Blueprint(u'requestdata_organization_requests', __name__,
-                                              url_prefix=u'/organization_/requested_data')
+                                              url_prefix=u'/organization/requested_data')
 
 
 def _get_context():
