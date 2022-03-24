@@ -1,5 +1,5 @@
 import json
-from collections import Counter
+from collections import namedtuple as namedtuple
 
 import unicodecsv as csv
 from flask import Blueprint
@@ -7,12 +7,9 @@ from flask import make_response
 from six import StringIO
 from sqlalchemy.sql.expression import or_
 
-import ckan.lib.maintain as maintain
 import ckan.logic as logic
-import ckanext.requestdata.helpers as requestdata_helper
 from ckan import model
 from ckan.plugins import toolkit as tk
-from ckanext.requestdata import helpers
 
 NotFound = tk.ObjectNotFound
 NotAuthorized = tk.NotAuthorized
@@ -121,10 +118,11 @@ def requests_data():
     orgs = sorted(filtered_orgs_map.values(), key=lambda o: o['title'])
 
     total_requests_counters = _get_action('requestdata_request_data_counters_get_all', {})
+    Requests = namedtuple('Requests', ['id', 'org'])
     extra_vars = {
         'organizations': orgs,
-        'organizations_for_filters': sorted(((o['id'], o) for o in orgs_map.values()),
-                                            key=lambda ((org_id, o)): o['requests'], reverse=True),
+        'organizations_for_filters': sorted((Requests(o['id'], o) for o in orgs_map.values()),
+                                            key=lambda r: r.org['requests'], reverse=True),
         'total_requests_counters': total_requests_counters
     }
 
