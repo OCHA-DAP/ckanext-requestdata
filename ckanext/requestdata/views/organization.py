@@ -53,7 +53,10 @@ def requested_data(id):
     try:
         requests = _get_action('requestdata_request_list_for_organization', {'org_id': id})
     except NotAuthorized:
-        abort(403, _('Not authorized to see this page.'))
+        return abort(403, _('Not authorized to see this page.'))
+
+    org_meta = org_meta_dao.OrgMetaDao(id, g.user or g.author, g.userobj)
+    org_meta.fetch_all()
 
     context = {
         'model': model,
@@ -235,20 +238,13 @@ def requested_data(id):
         'maintainers': maintainers,
         'org_name': organ['name'],
         'current_order_name': current_order_name,
+        'org_meta': org_meta,
         'counters': counters
     }
 
     _setup_template_variables(context, {'id': id}, group_type=group_type)
 
-    org_meta = org_meta_dao.OrgMetaDao(id, g.user or g.author, g.userobj)
-    try:
-        org_meta.fetch_all()
-    except NotFound as e:
-        abort(404, _('Page not found'))
-    except NotAuthorized as e:
-        abort(403, _('Not authorized to see this page'))
     helper.org_add_last_updated_field([org_meta.org_dict])
-    g.org_meta = org_meta
     if org_meta.is_custom:
         return render('requestdata/custom_organization_requested_data.html', extra_vars)
     else:
