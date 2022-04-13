@@ -220,12 +220,11 @@ def request_patch(context, data_dict):
     '''
 
     request_patch_schema = schema.request_patch_schema()
-    fields = request_patch_schema.keys()
+    fields = list(request_patch_schema.keys())
 
     # Exclude fields from the schema that are not in data_dict
     for field in fields:
-        if field not in data_dict.keys() and \
-            (field != 'id' and field != 'package_id'):
+        if field not in data_dict.keys() and (field != 'id' and field != 'package_id'):
             request_patch_schema.pop(field)
 
     data, errors = df.validate(data_dict, request_patch_schema, context)
