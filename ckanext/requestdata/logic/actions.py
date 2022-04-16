@@ -165,19 +165,18 @@ def request_list_for_organization(context, data_dict):
     org = __get_action('organization_show')(context, {'id': org_id})
 
     data_dict = {
-        'fq': 'organization:' + org['name'],
+        'fq': 'organization:{} extras_is_requestdata_type:true'.format(org['name']),
         'rows': 1000000
     }
-
     packages = __get_action('package_search')(context, data_dict)
+    id_to_map = {package['id']:package for package in packages['results']}
+    requests = ckanextRequestdata.get_by_package_ids(id_to_map.keys())
     total_requests = []
-    for package in packages['results']:
-        data = {
-            'package_id': package['id']
-        }
-        requests = ckanextRequestdata.search(**data)
-        for item in requests:
-            total_requests.append(item.as_dict())
+
+    for item in requests:
+        request_dict = item.as_dict()
+        request_dict['package_dict'] = id_to_map[item.package_id]
+        total_requests.append(request_dict)
 
     return total_requests
 
@@ -196,16 +195,22 @@ def request_list_for_current_user(context, data_dict):
     _check_access('requestdata_request_list_for_current_user',
                  context, data_dict)
 
-    model = context['model']
-    user_id = model.User.get(context['user']).id
-
-    requests = ckanextRequestdata.search_by_maintainers(user_id)
-    out = []
+    user_id = context['auth_user_obj'].id
+    data_dict = {
+        'fq': 'maintainer:{} extras_is_requestdata_type:true'.format(user_id),
+        'rows': 1000000
+    }
+    packages = __get_action('package_search')(context, data_dict)
+    id_to_map = {package['id']: package for package in packages['results']}
+    requests = ckanextRequestdata.get_by_package_ids(id_to_map.keys())
+    total_requests = []
 
     for item in requests:
-        out.append(item)
+        request_dict = item.as_dict()
+        request_dict['package_dict'] = id_to_map[item.package_id]
+        total_requests.append(request_dict)
 
-    return out
+    return total_requests
 
 
 def request_patch(context, data_dict):

@@ -1,14 +1,16 @@
 import json
 
+from six import text_type
 from flask import Blueprint
 from paste.deploy.converters import asbool
 
-from ckan import authz
 from ckan import model
 from ckan.plugins import toolkit as tk
 from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
 from ckanext.requestdata import helpers
 from ckanext.requestdata.emailer import send_email
+from ckanext.requestdata.view_helper import find_archived_sorting_params, sort_archived, group_requests_by_state, \
+    build_id_to_user_map, populate_requests_with_package_title_and_maintainer
 
 NotFound = tk.ObjectNotFound
 NotAuthorized = tk.NotAuthorized
@@ -55,88 +57,43 @@ def my_requested_data(id):
         requests = _get_action('requestdata_request_list_for_current_user',
                                {})
     except NotAuthorized:
-        abort(403, _('Not authorized to see this page.'))
+        return abort(403, _('Not authorized to see this page.'))
 
     g.is_myself = id == g.user
 
     if not g.is_myself:
-        abort(403, _('Not authorized to see this page.'))
+        return abort(403, _('Not authorized to see this page.'))
 
-    order_by = request.query_string
-    requests_new = []
-    requests_open = []
-    requests_archive = []
-    reverse = True
-    order = 'last_request_created_at'
-    current_order_name = 'Most Recent'
+    # for item in requests:
+    #     try:
+    #         package = _get_action('package_show', {'id': item['package_id']})
+    #         package_maintainers_ids = package['maintainer'].split(',')
+    #         item['title'] = package['title']
+    #     except NotFound as e:
+    #         # package was not found, possibly deleted
+    #         continue
+    #     maintainers = []
+    #     for i in package_maintainers_ids:
+    #         try:
+    #             user = _get_action('user_show', {'id': i})
+    #             payload = {
+    #                 'id': i,
+    #                 'fullname': user['fullname']
+    #             }
+    #             maintainers.append(payload)
+    #         except NotFound:
+    #             pass
+    #     item['maintainers'] = maintainers
 
-    if order_by != '':
-        if 'shared' in order_by:
-            order = 'shared'
-            current_order_name = 'Sharing Rate'
-        elif 'requests' in order_by:
-            order = 'requests'
-            current_order_name = 'Requests Rate'
-        elif 'asc' in order_by:
-            reverse = False
-            order = 'title'
-            current_order_name = 'Alphabetical (A-Z)'
-        elif 'desc' in order_by:
-            reverse = True
-            order = 'title'
-            current_order_name = 'Alphabetical (Z-A)'
-        elif 'most_recent' in order_by:
-            reverse = True
-            order = 'last_request_created_at'
+    id_to_user_map = build_id_to_user_map(requests)
 
-        for item in requests:
-            package = _get_action('package_show', {'id': item['package_id']})
-            count = _get_action('requestdata_request_data_counters_get', {'package_id': item['package_id']})
-            item['title'] = package['title']
-            item['shared'] = count.shared
-            item['requests'] = count.requests
+    populate_requests_with_package_title_and_maintainer(requests, id_to_user_map)
 
-    for item in requests:
-        try:
-            package = _get_action('package_show', {'id': item['package_id']})
-            package_maintainers_ids = package['maintainer'].split(',')
-            item['title'] = package['title']
-        except NotFound as e:
-            # package was not found, possibly deleted
-            continue
-        maintainers = []
-        for i in package_maintainers_ids:
-            try:
-                user = _get_action('user_show', {'id': i})
-                payload = {
-                    'id': i,
-                    'fullname': user['fullname']
-                }
-                maintainers.append(payload)
-            except NotFound:
-                pass
-        item['maintainers'] = maintainers
-        if item['state'] == 'new':
-            requests_new.append(item)
-        elif item['state'] == 'open':
-            requests_open.append(item)
-        elif item['state'] == 'archive':
-            requests_archive.append(item)
+    requests_archive, requests_new, requests_open = group_requests_by_state(requests)
 
-    requests_archive = \
-        helpers.group_archived_requests_by_dataset(requests_archive)
-
-    if order == 'last_request_created_at':
-        for dataset in requests_archive:
-            created_at = dataset.get('requests_archived')[0].get('created_at')
-            data = {
-                'last_request_created_at': created_at
-            }
-            dataset.update(data)
-
-    if order:
-        requests_archive = \
-            sorted(requests_archive, key=lambda x: x[order], reverse=reverse)
+    requests_archive = helpers.group_archived_requests_by_dataset(requests_archive)
+    order, reverse, current_order_name = find_archived_sorting_params(request.args.get('order_by'))
+    requests_archive = sort_archived(requests_archive, order, reverse)
 
     extra_vars = {
         'requests_new': requests_new,
@@ -145,34 +102,28 @@ def my_requested_data(id):
         'current_order_name': current_order_name
     }
 
-    context = _get_context()
-    g.userobj = user_obj = context['auth_user_obj']
-    user_id = user_obj.id
-    data_dict = {
-        'user_id': user_id
-    }
-    _get_action('requestdata_notification_change', data_dict)
+    _get_action('requestdata_notification_change', {'user_id': g.userobj.id})
 
-    data_dict = {
-        'id': id,
-        'include_num_followers': True
-    }
-    _setup_template_variables(_get_context(), data_dict)
+    # data_dict = {
+    #     'id': id,
+    #     'include_num_followers': True
+    # }
+    # _setup_template_variables(_get_context(), data_dict)
 
     return render('requestdata/my_requested_data.html', extra_vars)
 
 
-def _setup_template_variables(context, data_dict):
-    g.is_sysadmin = authz.is_sysadmin(g.user)
-    try:
-        user_dict = __get_action('user_show')(context, data_dict)
-    except NotFound:
-        abort(404, _('User not found'))
-    except NotAuthorized:
-        abort(403, _('Not authorized to see this page'))
-
-    g.user_dict = user_dict
-    g.about_formatted = h.render_markdown(user_dict['about'])
+# def _setup_template_variables(context, data_dict):
+#     g.is_sysadmin = authz.is_sysadmin(g.user)
+#     try:
+#         user_dict = __get_action('user_show')(context, data_dict)
+#     except NotFound:
+#         abort(404, _('User not found'))
+#     except NotAuthorized:
+#         abort(403, _('Not authorized to see this page'))
+#
+#     g.user_dict = user_dict
+#     g.about_formatted = h.render_markdown(user_dict['about'])
 
 
 def handle_new_request_action(username, request_action):

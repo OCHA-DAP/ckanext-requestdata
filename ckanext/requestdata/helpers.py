@@ -9,6 +9,7 @@ from paste.deploy.converters import asbool
 from ckan import model
 from ckan.model.user import User
 from ckan.plugins import toolkit as tk
+from ckanext.requestdata.model import ckanextRequestDataCounters
 
 NotFound = tk.ObjectNotFound
 NotAuthorized = tk.NotAuthorized
@@ -112,25 +113,39 @@ def convert_id_to_email(ids):
 def group_archived_requests_by_dataset(requests):
     sorted_requests = sorted(requests, key=itemgetter('package_id'))
     grouped_requests = []
+    package_ids = []
 
     for key, group in itertools.groupby(sorted_requests,
                                         key=lambda x: x['package_id']):
+        package_ids.append(key)
         requests = list(group)
-        item_shared = requests[0].get('shared')
-        item_requests = requests[0].get('requests')
-
         data = {
             'package_id': key,
-            'title': requests[0].get('title'),
-            'maintainers': requests[0].get('maintainers'),
+            'title': requests[0]['package_dict'].get('title'),
+            'maintainers': requests[0]['package_dict'].get('maintainer'),
             'requests_archived': requests,
-            'shared': item_shared,
-            'requests': item_requests
         }
 
         grouped_requests.append(data)
+    package_id_to_counters = fetch_counters_for_packages_as_map(package_ids)
+    for data in grouped_requests:
+        counters_dict = package_id_to_counters[data['package_id']]
+        data.update(counters_dict)
 
     return grouped_requests
+
+
+def fetch_counters_for_packages_as_map(package_ids):
+    package_id_to_counters = {}
+    counters = ckanextRequestDataCounters.get_by_package_ids(package_ids)
+    for counter in counters:
+        package_id_to_counters[counter.package_id] = {
+            'shared': counter.shared,
+            'requests': counter.requests,
+            'replied': counter.replied,
+            'declined': counter.declined,
+        }
+    return package_id_to_counters
 
 
 def has_query_param(param):
