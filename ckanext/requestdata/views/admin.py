@@ -10,6 +10,7 @@ from sqlalchemy.sql.expression import or_
 import ckan.logic as logic
 from ckan import model
 from ckan.plugins import toolkit as tk
+from ckanext.requestdata.helpers import fetch_counters_for_packages_as_map
 
 NotFound = tk.ObjectNotFound
 NotAuthorized = tk.NotAuthorized
@@ -77,7 +78,7 @@ def email():
                     'error_summary': error_summary}
             return render('admin/email.html', extra_vars=vars)
 
-        h.redirect_to(u'requestdata_ckanadmin.email')
+        return h.redirect_to(u'requestdata_ckanadmin.email')
 
     schema = logic.schema.update_configuration_schema()
     data = {}
@@ -96,6 +97,9 @@ def requests_data():
         abort(403, _('Not authorized to see this page.'))
     package_ids = {r.get('package_id') for r in requests}
 
+    archived_package_ids = {r.get('package_id') for r in requests if r.get('state') == 'archive'}
+    archived_counters_map = fetch_counters_for_packages_as_map(archived_package_ids)
+
     package_ids_to_requests = {}
     for r in requests:
         pkg_id = r.get('package_id')
@@ -112,7 +116,7 @@ def requests_data():
     maintainers_dict = __build_maintainers_dict(maintainer_ids)
 
     orgs_map = __build_organizations_dict(search_result.get('results'), package_ids_to_requests,
-                                          maintainers_dict)
+                                          maintainers_dict, archived_counters_map)
     filtered_orgs = __find_filtered_orgs()
     filtered_orgs_map = {k: v for k, v in orgs_map.items() if k in filtered_orgs} if filtered_orgs else orgs_map
     orgs = sorted(filtered_orgs_map.values(), key=lambda o: o['title'])
@@ -175,7 +179,7 @@ def __build_maintainers_dict(maintainer_ids):
     return maintainers_dict
 
 
-def __build_organizations_dict(package_list, package_ids_to_requests, maintainers_dict):
+def __build_organizations_dict(package_list, package_ids_to_requests, maintainers_dict, archived_counters_map):
     orgs_map = {}
     for pkg_dict in package_list:
         org_dict = pkg_dict.get('organization')
@@ -197,6 +201,9 @@ def __build_organizations_dict(package_list, package_ids_to_requests, maintainer
             'requests': len(archived_requests),
             'shared': None,
         }
+        if archived_requests:
+            archived_counters = archived_counters_map[pkg_dict['id']]
+            grouped_archived_requests.update(archived_counters)
 
         if not new_org_dict:
             new_org_dict = {

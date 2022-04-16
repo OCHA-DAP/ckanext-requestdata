@@ -107,6 +107,11 @@ class ckanextRequestdata(DomainObject):
         return query
 
     @classmethod
+    def get_by_package_ids(cls, package_ids, order='modified_at desc'):
+        query = Session.query(cls).filter(cls.package_id.in_(package_ids)).order_by(text(order))
+        return query
+
+    @classmethod
     def search(self, order='modified_at desc', **kwds):
         '''Finds entities in the table that satisfy certain criteria.
         :param order: Order rows by specified column.
@@ -314,6 +319,11 @@ class ckanextRequestDataCounters(DomainObject):
         query = Session.query(self).autoflush(False)
         query = query.filter_by(**kwds).first()
 
+        return query
+
+    @classmethod
+    def get_by_package_ids(cls, package_ids):
+        query = Session.query(cls).filter(cls.package_id.in_(package_ids))
         return query
 
     @classmethod

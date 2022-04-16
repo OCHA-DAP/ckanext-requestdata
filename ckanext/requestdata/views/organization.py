@@ -1,13 +1,15 @@
-from collections import Counter
-
+import logging
 from flask import Blueprint
 
 import ckanext.hdx_org_group.helpers.org_meta_dao as org_meta_dao
 import ckanext.hdx_org_group.helpers.organization_helper as helper
 from ckan import model
 from ckan.plugins import toolkit as tk
-from ckan.views.group import _setup_template_variables as _setup_template_variables
 from ckanext.requestdata import helpers
+from ckanext.requestdata.view_helper import find_archived_sorting_params, sort_archived, group_requests_by_state, \
+    build_id_to_user_map, populate_requests_with_package_title_and_maintainer
+
+log = logging.getLogger(__name__)
 
 NotFound = tk.ObjectNotFound
 NotAuthorized = tk.NotAuthorized
@@ -58,197 +60,62 @@ def requested_data(id):
     org_meta = org_meta_dao.OrgMetaDao(id, g.user or g.author, g.userobj)
     org_meta.fetch_all()
 
-    context = {
-        'model': model,
-        'session': model.Session,
-        'user': g.user
-    }
+    request_params = request.args.to_dict() or request.form.to_dict()
 
-    g.group_dict = _get_action('organization_show', {'id': id})
-    group_type = 'organization'
-    request_params = request.form.to_dict()
+    id_to_user_map = build_id_to_user_map(requests)
 
-    filtered_maintainers = []
-    reverse = True
-    order = 'last_request_created_at'
-    q_organization = ''
-    current_order_name = 'Most Recent'
-
-    for item in request_params:
-        if item == 'filter_by_maintainers':
-            for x in request_params[item]:
-                params = x.split('|')
-                org = params[0].split(':')[1]
-                maintainers = params[1].split(':')[1].split(',')
-                maintainers_ids = []
-                if maintainers[0] != '*all*':
-                    for i in maintainers:
-                        try:
-                            user = _get_action('user_show', {'id': i})
-                            maintainers_ids.append(user['id'])
-                        except NotFound:
-                            pass
-                    data = {
-                        'org': org,
-                        'maintainers': maintainers_ids
-                    }
-
-                    filtered_maintainers.append(data)
-        elif item == 'order_by':
-            params = request_params[item][0].split('|')
-            q_organization = params[1].split(':')[1]
-            order = params[0]
-            if 'asc' in order:
-                reverse = False
-                order = 'title'
-                current_order_name = 'Alphabetical (A-Z)'
-            elif 'desc' in order:
-                reverse = True
-                order = 'title'
-                current_order_name = 'Alphabetical (Z-A)'
-            elif 'most_recent' in order:
-                reverse = True
-                order = 'last_request_created_at'
-            elif 'shared' in order:
-                current_order_name = 'Sharing Rate'
-            elif 'requests' in order:
-                current_order_name = 'Requests Rate'
-
-            for x in requests:
-                package = \
-                    _get_action('package_show', {'id': x['package_id']})
-                count = \
-                    _get_action('requestdata_request_data_counters_get',
-                                {'package_id': x['package_id']})
-                x['title'] = package['title']
-                x['shared'] = count.shared
-                x['requests'] = count.requests
-                data_dict = {'id': package['owner_org']}
-                current_org = _get_action('organization_show', data_dict)
-                x['name'] = current_org['name']
-
-    maintainers = []
-    for item in requests:
-        package = _get_action('package_show', {'id': item['package_id']})
-        package_maintainer_ids = package['maintainer'].split(',')
-        item['title'] = package['title']
-        package_maintainers = []
-
-        for maint_id in package_maintainer_ids:
-            try:
-                user = _get_action('user_show', {'id': maint_id})
-                username = user['name']
-                name = user['fullname']
-
-                if not name:
-                    name = username
-
-                payload = {
-                    'id': maint_id,
-                    'name': name,
-                    'username': username,
-                    'fullname': name}
-                maintainers.append(payload)
-                package_maintainers.append(payload)
-            except NotFound:
-                pass
-        item['maintainers'] = package_maintainers
-
-    copy_of_maintainers = maintainers
-    maintainers = dict((item['id'], item) for item in maintainers).values()
-    organ = _get_action('organization_show', {'id': id})
-
-    # Count how many requests each maintainer has
-    for main in maintainers:
-        count = Counter(
-            item for dct in copy_of_maintainers for item in dct.items())
-        main['count'] = count[('id', main['id'])]
+    populate_requests_with_package_title_and_maintainer(requests, id_to_user_map)
 
     # Sort maintainers by number of requests
-    maintainers = sorted(
-        maintainers, key=lambda k: k['count'], reverse=True)
+    maintainers = sorted(id_to_user_map.values(), key=lambda k: k['count'], reverse=True)
 
-    for i, r in enumerate(requests[:]):
-        maintainer_found = False
+    _filter_by_maintainer(requests, request_params.get('filter_by_maintainers'), id_to_user_map)
 
-        package = _get_action('package_show', {'id': r['package_id']})
-        package_maintainer_ids = package['maintainer'].split(',')
-        is_hdx = helpers.is_hdx_portal()
-
-        if is_hdx:
-            # Quick fix for hdx portal
-            maintainer_ids = []
-            for maintainer_name in package_maintainer_ids:
-                try:
-                    main_ids = \
-                        _get_action('user_show', {'id': maintainer_name})
-                    maintainer_ids.append(main_ids['id'])
-                except NotFound:
-                    pass
-        data_dict = {'id': package['owner_org']}
-        organ = _get_action('organization_show', data_dict)
-
-        # Check if current request is part of a filtered maintainer
-        for x in filtered_maintainers:
-            if x['org'] == organ['name']:
-                for maint in x['maintainers']:
-                    if is_hdx:
-                        if maint in maintainer_ids:
-                            maintainer_found = True
-                    else:
-                        if maint in package_maintainer_ids:
-                            maintainer_found = True
-
-                if not maintainer_found:
-                    requests.remove(r)
-
-    requests_new = []
-    requests_open = []
-    requests_archive = []
-
-    for item in requests:
-        if item['state'] == 'new':
-            requests_new.append(item)
-        elif item['state'] == 'open':
-            requests_open.append(item)
-        elif item['state'] == 'archive':
-            requests_archive.append(item)
+    requests_archive, requests_new, requests_open = group_requests_by_state(requests)
 
     grouped_requests_archive = helpers.group_archived_requests_by_dataset(requests_archive)
+    order, reverse, current_order_name = find_archived_sorting_params(request_params.get('order_by'))
+    grouped_requests_archive = sort_archived(grouped_requests_archive, order, reverse)
 
-    if order == 'last_request_created_at':
-        for dataset in grouped_requests_archive:
-            created_at = dataset.get('requests_archived')[0].get('created_at')
-            data = {
-                'last_request_created_at': created_at
-            }
-            dataset.update(data)
-
-    if organ['name'] == q_organization:
-        grouped_requests_archive = sorted(grouped_requests_archive,
-                                          key=lambda x: x[order],
-                                          reverse=reverse)
-
-    counters = _get_action('requestdata_request_data_counters_get_by_org', {'org_id': organ['id']})
+    counters = _get_action('requestdata_request_data_counters_get_by_org', {'org_id': org_meta.org_dict['id']})
 
     extra_vars = {
         'requests_new': requests_new,
         'requests_open': requests_open,
         'requests_archive': grouped_requests_archive,
         'maintainers': maintainers,
-        'org_name': organ['name'],
+        'org_name': org_meta.org_dict['name'],
         'current_order_name': current_order_name,
         'org_meta': org_meta,
         'counters': counters
     }
-
-    _setup_template_variables(context, {'id': id}, group_type=group_type)
 
     helper.org_add_last_updated_field([org_meta.org_dict])
     if org_meta.is_custom:
         return render('requestdata/custom_organization_requested_data.html', extra_vars)
     else:
         return render('requestdata/organization_requested_data.html', extra_vars)
+
+
+def _filter_by_maintainer(requests, request_param_value, id_to_user_map):
+    filtered_maintainers = _build_filtered_maintainers_set(request_param_value)
+    for current_request in requests[:]:
+        package = current_request['package_dict']
+        package_maintainer_id = package['maintainer']
+        package_maintainer_name = id_to_user_map[package_maintainer_id]['username']
+
+        if filtered_maintainers and package_maintainer_name not in filtered_maintainers:
+            requests.remove(current_request)
+
+
+def _build_filtered_maintainers_set(request_param_value):
+    if request_param_value:
+        params = request_param_value.split('|')
+        # org = params[0].split(':')[1]
+        maintainers = params[1].split(':')[1].split(',')
+        if maintainers[0] != '*all*':
+            return set(maintainers)
+    return None
 
 
 requestdata_organization_requests.add_url_rule(u'/<id>', view_func=requested_data, methods=[u'GET'])
