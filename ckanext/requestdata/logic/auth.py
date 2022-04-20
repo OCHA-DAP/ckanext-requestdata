@@ -79,9 +79,10 @@ def _user_has_access_to_request(context, data_dict):
     payload = {'id': data_dict['package_id']}
     package = get_action('package_show')(context, payload)
     creator_user_id = package['creator_user_id']
+    maintainer_user_id = package.get('maintainer')
 
-    # Checks whether the current logged in user is the creator of the package
-    if current_user_id == creator_user_id:
+    # Checks whether the current logged in user is the creator or maintainer of the package
+    if current_user_id == creator_user_id or current_user_id == maintainer_user_id:
         return True
     else:
         payload = {'id': package['owner_org']}
