@@ -66,6 +66,8 @@ def setup():
         log.debug('Maintainers table already exists.')
     inspector = Inspector.from_engine(engine)
 
+    add_request_data_table_column_path(inspector.get_columns('ckanext_requestdata_requests'))
+
     index_names = \
         [index['name'] for index in
          inspector.get_indexes('ckanext_requestdata_maintainers')]
@@ -147,6 +149,7 @@ class ckanextRequestdata(DomainObject):
                 'sender_user_id': r.ckanextRequestdata.sender_user_id,
                 'email_address': r.ckanextRequestdata.email_address,
                 'message_content': r.ckanextRequestdata.message_content,
+                'extras': r.ckanextRequestdata.extras,
                 'package_id': r.ckanextRequestdata.package_id,
                 'state': r.ckanextRequestdata.state,
                 'data_shared': r.ckanextRequestdata.data_shared,
@@ -175,6 +178,8 @@ def define_request_data_table():
                                       nullable=False),
                                Column('message_content', types.UnicodeText,
                                       nullable=False),
+                               Column('extras', types.UnicodeText,
+                                      nullable=False),
                                Column('package_id', types.UnicodeText,
                                       nullable=False),
                                Column('state', types.UnicodeText,
@@ -194,6 +199,16 @@ def define_request_data_table():
         ckanextRequestdata,
         request_data_table
     )
+
+
+def add_request_data_table_column_path(columns):
+    extra_column = 'extras'
+    if not any(column['name'] == extra_column for column in columns):
+        column = Column(extra_column, types.UnicodeText, default='')
+        column_name = column.compile(dialect=engine.dialect)
+        column_type = column.type.compile(engine.dialect)
+        engine.execute(
+            'ALTER TABLE %s ADD COLUMN %s %s' % ('ckanext_requestdata_requests', column_name, column_type))
 
 
 class ckanextUserNotification(DomainObject):

@@ -17,7 +17,11 @@ def request_create_schema():
         'sender_name': [not_empty, text_type],
         'email_address': [not_empty, email_validator],
         'message_content': [not_empty, text_type],
-        'package_id': [not_empty, package_id_exists]
+        'package_id': [not_empty, package_id_exists],
+        'sender_country': [not_empty, text_type],
+        'sender_organization_id': [not_empty, text_type],
+        'sender_organization_type': [not_empty, text_type],
+        'sender_intend': [not_empty, text_type],
     }
 
 
