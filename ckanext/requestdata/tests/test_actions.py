@@ -49,12 +49,16 @@ class TestActions(ActionBase):
 
         ex = cm.exception
 
-        assert len(ex.error_dict) == 4
+        assert len(ex.error_dict) == 8
 
         assert ex.error_dict['message_content'] == ['Missing value']
         assert ex.error_dict['sender_name'] == ['Missing value']
         assert ex.error_dict['email_address'] == ['Missing value']
         assert ex.error_dict['package_id'] == ['Missing value']
+        assert ex.error_dict['sender_country'] == [u'Missing value']
+        assert ex.error_dict['sender_organization_id'] == [u'Missing value']
+        assert ex.error_dict['sender_organization_type'] == [u'Missing value']
+        assert ex.error_dict['sender_intend'] == [u'Missing value']
 
     @raises(logic.NotAuthorized)
     def test_create_requestdata_raises_auth_error(self):

@@ -1,4 +1,5 @@
 import datetime
+import json
 import logging
 import ckan.plugins.toolkit as tk
 import ckan.lib.navl.dictization_functions as df
@@ -49,17 +50,43 @@ def request_create(context, data_dict):
     if errors:
         raise ValidationError(errors)
 
+    sender_user_id = User.get(context['user']).id
+    sender_organizations = __get_action('hdx_organization_list_for_user')(context, {'id': sender_user_id})
+
     sender_name = data.get('sender_name')
     organization = data.get('organization')
     email_address = data.get('email_address')
     message_content = data.get('message_content')
     package_id = data.get('package_id')
 
+    sender_country = data.get('sender_country')
+    sender_organization_id = data.get('sender_organization_id') if not data.get(
+        'sender_organization_id') == '__other__' else data['__extras'].get('sender_organization_id_other')
+    sender_organization_type = data.get('sender_organization_type') if not data.get(
+        'sender_organization_type') == '__other__' else data['__extras'].get('sender_organization_type_other')
+    sender_intend = data.get('sender_intend') if not data.get(
+        'sender_intend') == '__other__' else data['__extras'].get('sender_intend_other')
+
+    try:
+        org_dict = __get_action('organization_show')(context, {'id': sender_organization_id})
+        sender_organization_name = org_dict.get('display_name')
+        sender_organization_member = True if (org['id'] == sender_organization_id for org in
+                                              sender_organizations) else False
+
+    except NotFound:
+        sender_organization_name = sender_organization_id
+        sender_organization_member = False
+
+    extras = json.dumps({'country': sender_country,
+                                         'organization_id': sender_organization_id,
+                                         'organization_name': sender_organization_name,
+                                         'organization_member': sender_organization_member,
+                                         'organization_type': sender_organization_type,
+                                         'intend': sender_intend})
+
     package = __get_action('package_show')(context, {'id': package_id})
 
     if package.get('is_requestdata_type'):
-        sender_user_id = User.get(context['user']).id
-
         if package.get('maintainer'):
             maintainers = package['maintainer'].split(',')
         else:
@@ -71,6 +98,7 @@ def request_create(context, data_dict):
             'organization': organization,
             'email_address': email_address,
             'message_content': message_content,
+            'extras': extras,
             'package_id': package_id
         }
 
