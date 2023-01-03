@@ -1,4 +1,5 @@
 from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
+from ckanext.requestdata.model import ckanextRequestdata
 from paste.deploy.converters import asbool
 import ckan.plugins.toolkit as tk
 
@@ -87,3 +88,15 @@ def request_counter_validator(key, data, errors, context):
         message = _('The flag parameter must be request, replied, declined, '
                     'or shared')
         errors[key].append(message)
+
+
+def pending_request_validator(key, data, errors, context):
+
+    model = context['model']
+    user = model.User.get(context['user'])
+
+    existing_request = ckanextRequestdata.get_pending_request(data[key], user.id, ['new', 'open'])
+
+    if existing_request:
+        errors[key].append(_('You already have a pending request. Please wait for the reply.'))
+    return data[key]
