@@ -10,6 +10,7 @@ email_validator = validators.email_validator
 state_validator = validators.state_validator
 boolean_validator = validators.boolean_validator
 counters_validator = validators.request_counter_validator
+pending_request_validator = validators.pending_request_validator
 
 
 def request_create_schema():
@@ -17,7 +18,7 @@ def request_create_schema():
         'sender_name': [not_empty, text_type],
         'email_address': [not_empty, email_validator],
         'message_content': [not_empty, text_type],
-        'package_id': [not_empty, package_id_exists],
+        'package_id': [not_empty, package_id_exists, pending_request_validator],
         'sender_country': [not_empty, text_type],
         'sender_organization_id': [not_empty, text_type],
         'sender_organization_type': [not_empty, text_type],
