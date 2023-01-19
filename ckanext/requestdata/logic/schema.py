@@ -11,6 +11,7 @@ state_validator = validators.state_validator
 boolean_validator = validators.boolean_validator
 counters_validator = validators.request_counter_validator
 pending_request_validator = validators.pending_request_validator
+not_empty_if_other_selected = validators.not_empty_if_other_selected
 
 
 def request_create_schema():
@@ -21,8 +22,11 @@ def request_create_schema():
         'package_id': [not_empty, package_id_exists, pending_request_validator],
         'sender_country': [not_empty, text_type],
         'sender_organization_id': [not_empty, text_type],
+        'sender_organization_id_other': [not_empty_if_other_selected],
         'sender_organization_type': [not_empty, text_type],
+        'sender_organization_type_other': [not_empty_if_other_selected],
         'sender_intend': [not_empty, text_type],
+        'sender_intend_other': [not_empty_if_other_selected],
     }
 
 

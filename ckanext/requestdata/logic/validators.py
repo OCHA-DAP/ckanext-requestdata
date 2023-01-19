@@ -5,6 +5,7 @@ import ckan.plugins.toolkit as tk
 
 _ = tk._
 get_action = tk.get_action
+StopOnError = tk.StopOnError
 
 
 def email_validator(key, data, errors, context):
@@ -100,3 +101,18 @@ def pending_request_validator(key, data, errors, context):
     if existing_request:
         errors[key].append(_('You already have a pending request. Please wait for the reply.'))
     return data[key]
+
+
+def not_empty_if_other_selected(key, data, errors, context):
+    value = data.get(key)
+    other_key = key[0][:-6]
+    other_value = data.get((other_key,))
+    other_compare_value = 'other'
+    if not value and other_value == other_compare_value:
+        errors[key].append(_('Missing value'))
+        raise StopOnError
+    elif other_value != other_compare_value:
+        del data[key]
+        raise StopOnError
+
+    return not_empty_if_other_selected

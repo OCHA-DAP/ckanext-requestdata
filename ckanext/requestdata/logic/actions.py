@@ -60,12 +60,11 @@ def request_create(context, data_dict):
     package_id = data.get('package_id')
 
     sender_country = data.get('sender_country')
-    sender_organization_id = data.get('sender_organization_id') if not data.get(
-        'sender_organization_id') == '__other__' else data['__extras'].get('sender_organization_id_other')
-    sender_organization_type = data.get('sender_organization_type') if not data.get(
-        'sender_organization_type') == '__other__' else data['__extras'].get('sender_organization_type_other')
-    sender_intend = data.get('sender_intend') if not data.get(
-        'sender_intend') == '__other__' else data['__extras'].get('sender_intend_other')
+    sender_organization_id = data.get('sender_organization_id_other') if data.get(
+        'sender_organization_id_other') else data.get('sender_organization_id')
+    sender_organization_type = data.get('sender_organization_type_other') if data.get(
+        'sender_organization_type_other') else data.get('sender_organization_type')
+    sender_intend = data.get('sender_intend_other') if data.get('sender_intend_other') else data.get('sender_intend')
 
     try:
         org_dict = __get_action('organization_show')(context, {'id': sender_organization_id})
