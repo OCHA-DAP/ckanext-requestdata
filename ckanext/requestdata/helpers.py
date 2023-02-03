@@ -181,9 +181,24 @@ def is_current_user_a_maintainer(maintainers):
     return False
 
 
-def get_orgs_for_user(user_id):
+def get_orgs_for_user(user_id, include_org_type=False):
     try:
         orgs = _get_action('organization_list_for_user', {'id': user_id})
+
+        if include_org_type:
+            query = model.Session.query(model.GroupExtra)
+            query = query.filter_by(key='hdx_org_type', state='active')
+            org_extras = query.all()
+
+            extras = {}
+            for org_extra in org_extras:
+                extras[org_extra.group_id] = {'name': org_extra.group.name, 'value': org_extra.value}
+
+            for org in orgs:
+                org_id = org.get('id')
+                if org_id in extras:
+                    org_extra = extras[org_id]
+                    org['org_type'] = org_extra.get('value') if org_extra.get('name') == org.get('name') else None
 
         return orgs
     except Exception:
