@@ -10,6 +10,7 @@ from ckan import model
 from ckan.model.user import User
 from ckan.plugins import toolkit as tk
 from ckanext.requestdata.model import ckanextRequestDataCounters
+from ckanext.hdx_org_group.helpers.static_lists import ORGANIZATION_TYPE_LIST
 
 NotFound = tk.ObjectNotFound
 NotAuthorized = tk.NotAuthorized
@@ -213,3 +214,8 @@ def role_in_org(user_id, org_name):
     for user in org.get('users', []):
         if user.get('id') == user_id:
             return user.get('capacity')
+
+
+def get_org_type_value(org_type_key):
+    return next((org_type[0] for org_type in ORGANIZATION_TYPE_LIST if org_type[1] == org_type_key), org_type_key)
+
