@@ -34,7 +34,7 @@ class TestActions(ActionBase):
             'package_id': package['id'],
             'sender_name': 'John Doe',
             'message_content': 'I want to add additional data.',
-            'organization': 'Google',
+            'organization': 'hdx-test-org',
             'email_address': 'test@test.com',
         }
 
@@ -70,7 +70,7 @@ class TestActions(ActionBase):
             'package_id': 'some-id',
             'sender_name': 'John Doe',
             'message_content': 'I want to add additional data.',
-            'organization': 'Google',
+            'organization': 'hdx-test-org',
             'email_address': 'non@existing.email',
         }
 
@@ -87,7 +87,7 @@ class TestActions(ActionBase):
             'package_id': 'non_existing_package_id',
             'sender_name': 'John Doe',
             'message_content': 'I want to add additional data.',
-            'organization': 'Google',
+            'organization': 'hdx-test-org',
             'email_address': 'test@test.com',
         }
 
@@ -112,7 +112,7 @@ class TestActions(ActionBase):
             'package_id': package['id'],
             'sender_name': 'John Doe',
             'message_content': 'I want to add additional data.',
-            'organization': 'Google',
+            'organization': 'hdx-test-org',
             'email_address': 'test@test.com',
         }
 
@@ -213,7 +213,7 @@ class TestActions(ActionBase):
             'package_id': package['id'],
             'sender_name': 'John Doe',
             'message_content': 'I want to add additional data.',
-            'organization': 'Google',
+            'organization': 'hdx-test-org',
             'email_address': user['email'],
         }
 
@@ -238,7 +238,7 @@ class TestActions(ActionBase):
         data_dict = {
             'sender_name': 'John Doe',
             'message_content': 'I want to add additional data.',
-            'organization': 'Google',
+            'organization': 'hdx-test-org',
             'email_address': 'test@test.com',
         }
 
