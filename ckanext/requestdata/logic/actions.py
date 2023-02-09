@@ -7,6 +7,7 @@ from ckanext.requestdata.logic import schema
 from ckanext.requestdata.model import ckanextRequestdata, \
     ckanextUserNotification, ckanextMaintainers, ckanextRequestDataCounters
 from ckanext.requestdata import helpers
+from ckanext.requestdata.view_helper import process_extras_fields
 
 NotAuthorized = tk.NotAuthorized
 ValidationError = tk.ValidationError
@@ -57,7 +58,13 @@ def request_create(context, data_dict):
     message_content = data.get('message_content')
     package_id = data.get('package_id')
 
-    extras = helpers.process_extras_fields(data, sender_user_id)
+    sender_orgs = helpers.get_orgs_for_user(sender_user_id)
+    try:
+        sender_org = __get_action('organization_show')(context, {'id': data.get('sender_organization_id')})
+    except NotFound:
+        sender_org = None
+
+    extras = process_extras_fields(data, sender_orgs, sender_org)
 
     package = __get_action('package_show')(context, {'id': package_id})
 

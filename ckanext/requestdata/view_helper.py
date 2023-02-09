@@ -1,4 +1,5 @@
 import logging
+import json
 
 from ckan import model
 from ckan.plugins import toolkit as tk
@@ -130,3 +131,28 @@ def populate_requests_with_package_title_and_maintainer(requests, id_to_user_map
         package_maintainer_id = package['maintainer']
         user = id_to_user_map.get(package_maintainer_id)
         current_request['maintainers'] = [user]
+
+
+def process_extras_fields(data_dict, sender_organizations, organization):
+    sender_country = data_dict.get('sender_country')
+    sender_organization_id = data_dict.get('sender_organization_id_other') if data_dict.get(
+        'sender_organization_id_other') else data_dict.get('sender_organization_id')
+    sender_organization_type = data_dict.get('sender_organization_type_other') if data_dict.get(
+        'sender_organization_type_other') else data_dict.get('sender_organization_type')
+    sender_intend = data_dict.get('sender_intend_other') if data_dict.get('sender_intend_other') else data_dict.get(
+        'sender_intend')
+
+    if organization:
+        sender_organization_name = organization.get('display_name')
+        sender_organization_member = True if (org['id'] == sender_organization_id for org in
+                                              sender_organizations) else False
+    else:
+        sender_organization_name = sender_organization_id
+        sender_organization_member = False
+
+    return json.dumps({'country': sender_country,
+                       'organization_id': sender_organization_id,
+                       'organization_name': sender_organization_name,
+                       'organization_member': sender_organization_member,
+                       'organization_type': sender_organization_type,
+                       'intend': sender_intend})
