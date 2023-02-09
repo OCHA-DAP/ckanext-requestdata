@@ -213,3 +213,32 @@ def role_in_org(user_id, org_name):
     for user in org.get('users', []):
         if user.get('id') == user_id:
             return user.get('capacity')
+
+
+def process_extras_fields(data_dict, sender_user_id):
+    sender_organizations = _get_action('hdx_organization_list_for_user', {'id': sender_user_id})
+
+    sender_country = data_dict.get('sender_country')
+    sender_organization_id = data_dict.get('sender_organization_id_other') if data_dict.get(
+        'sender_organization_id_other') else data_dict.get('sender_organization_id')
+    sender_organization_type = data_dict.get('sender_organization_type_other') if data_dict.get(
+        'sender_organization_type_other') else data_dict.get('sender_organization_type')
+    sender_intend = data_dict.get('sender_intend_other') if data_dict.get('sender_intend_other') else data_dict.get(
+        'sender_intend')
+
+    try:
+        org_dict = _get_action('organization_show', {'id': sender_organization_id})
+        sender_organization_name = org_dict.get('display_name')
+        sender_organization_member = True if (org['id'] == sender_organization_id for org in
+                                              sender_organizations) else False
+
+    except NotFound:
+        sender_organization_name = sender_organization_id
+        sender_organization_member = False
+
+    return json.dumps({'country': sender_country,
+                       'organization_id': sender_organization_id,
+                       'organization_name': sender_organization_name,
+                       'organization_member': sender_organization_member,
+                       'organization_type': sender_organization_type,
+                       'intend': sender_intend})
