@@ -1,5 +1,4 @@
 import datetime
-import json
 import logging
 import ckan.plugins.toolkit as tk
 import ckan.lib.navl.dictization_functions as df
@@ -51,7 +50,6 @@ def request_create(context, data_dict):
         raise ValidationError(errors)
 
     sender_user_id = User.get(context['user']).id
-    sender_organizations = __get_action('hdx_organization_list_for_user')(context, {'id': sender_user_id})
 
     sender_name = data.get('sender_name')
     organization = data.get('organization')
@@ -59,29 +57,7 @@ def request_create(context, data_dict):
     message_content = data.get('message_content')
     package_id = data.get('package_id')
 
-    sender_country = data.get('sender_country')
-    sender_organization_id = data.get('sender_organization_id_other') if data.get(
-        'sender_organization_id_other') else data.get('sender_organization_id')
-    sender_organization_type = data.get('sender_organization_type_other') if data.get(
-        'sender_organization_type_other') else data.get('sender_organization_type')
-    sender_intend = data.get('sender_intend_other') if data.get('sender_intend_other') else data.get('sender_intend')
-
-    try:
-        org_dict = __get_action('organization_show')(context, {'id': sender_organization_id})
-        sender_organization_name = org_dict.get('display_name')
-        sender_organization_member = True if (org['id'] == sender_organization_id for org in
-                                              sender_organizations) else False
-
-    except NotFound:
-        sender_organization_name = sender_organization_id
-        sender_organization_member = False
-
-    extras = json.dumps({'country': sender_country,
-                                         'organization_id': sender_organization_id,
-                                         'organization_name': sender_organization_name,
-                                         'organization_member': sender_organization_member,
-                                         'organization_type': sender_organization_type,
-                                         'intend': sender_intend})
+    extras = helpers.process_extras_fields(data, sender_user_id)
 
     package = __get_action('package_show')(context, {'id': package_id})
 
