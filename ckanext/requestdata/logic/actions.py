@@ -143,7 +143,7 @@ def request_list_for_sysadmin(context, data_dict):
 
     _check_access('hdx_request_data_admin_list', context, data_dict)
 
-    requests = ckanextRequestdata.search()
+    requests = ckanextRequestdata.search(order='created_at desc')
 
     out = []
 
