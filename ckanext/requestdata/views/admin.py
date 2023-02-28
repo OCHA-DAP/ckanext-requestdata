@@ -97,26 +97,15 @@ def requests_data():
         abort(403, _('Not authorized to see this page.'))
     package_ids = {r.get('package_id') for r in requests}
 
-    archived_package_ids = {r.get('package_id') for r in requests if r.get('state') == 'archive'}
-    archived_counters_map = fetch_counters_for_packages_as_map(archived_package_ids)
-
-    package_ids_to_requests = {}
-    for r in requests:
-        pkg_id = r.get('package_id')
-        req_list = package_ids_to_requests.get(pkg_id)
-        if not req_list:
-            req_list = []
-            package_ids_to_requests[pkg_id] = req_list
-
-        req_list.append(r)
+    archived_counters_map = fetch_counters_for_packages_as_map(package_ids)
 
     search_result = __find_packages(package_ids)
     maintainer_ids = {pkg_dict.get('maintainer')
                       for pkg_dict in search_result.get('results', []) if pkg_dict.get('maintainer')}
     maintainers_dict = __build_maintainers_dict(maintainer_ids)
 
-    orgs_map = __build_organizations_dict(search_result.get('results'), package_ids_to_requests,
-                                          maintainers_dict, archived_counters_map)
+    orgs_map = __build_organizations_dict(search_result.get('results'), requests, maintainers_dict,
+                                          archived_counters_map)
     filtered_orgs = __find_filtered_orgs()
     filtered_orgs_map = {k: v for k, v in orgs_map.items() if k in filtered_orgs} if filtered_orgs else orgs_map
     orgs = sorted(filtered_orgs_map.values(), key=lambda o: o['title'])
@@ -179,58 +168,60 @@ def __build_maintainers_dict(maintainer_ids):
     return maintainers_dict
 
 
-def __build_organizations_dict(package_list, package_ids_to_requests, maintainers_dict, archived_counters_map):
+def __build_organizations_dict(package_list, requests, maintainers_dict, archived_counters_map):
     orgs_map = {}
-    for pkg_dict in package_list:
-        org_dict = pkg_dict.get('organization')
-        pkg_maintainer = maintainers_dict.get(pkg_dict.get('maintainer', ''))
-        pkg_maintainers = [pkg_maintainer] if pkg_maintainer else []
-        requests = package_ids_to_requests[pkg_dict['id']]
-        for r in requests:
+    for r in requests:
+        pkg_dict = next((item for item in package_list if item['id'] == r.get('package_id')), None)
+        if pkg_dict:
+            org_dict = pkg_dict.get('organization')
+            pkg_maintainer = maintainers_dict.get(pkg_dict.get('maintainer', ''))
+            pkg_maintainers = [pkg_maintainer] if pkg_maintainer else []
             r['title'] = pkg_dict.get('title')
             r['name'] = org_dict.get('name')
             r['maintainers'] = pkg_maintainers
-        new_org_dict = orgs_map.get(org_dict['name'])
 
-        archived_requests = [r for r in requests if r.get('state') == 'archive']
-        grouped_archived_requests = {
-            'package_id': pkg_dict['id'],
-            'title': pkg_dict.get('title'),
-            'maintainers': pkg_maintainers,
-            'requests_archived': archived_requests,
-            'requests': len(archived_requests),
-            'shared': None,
-        }
-        if archived_requests:
-            archived_counters = archived_counters_map[pkg_dict['id']]
-            grouped_archived_requests.update(archived_counters)
-
-        if not new_org_dict:
-            new_org_dict = {
-                'title': org_dict.get('title'),
-                'name': org_dict['name'],
-                'id': org_dict['id'],
-                'requests_new': [r for r in requests if r.get('state') == 'new'],
-                'requests_open': [r for r in requests if r.get('state') == 'open'],
-                'requests_archive': [grouped_archived_requests] if archived_requests else [],
-                'maintainers': [],
-                'counters': {},
-                'packages': [pkg_dict]
-            }
-            orgs_map[org_dict['name']] = new_org_dict
-        else:
-            new_org_dict['packages'].append(pkg_dict)
-            new_org_dict['requests_archive'].append(grouped_archived_requests)
-            for r in requests:
+            new_org_dict = orgs_map.get(org_dict['name'])
+            if not new_org_dict:
+                new_org_dict = {
+                    'title': org_dict.get('title'),
+                    'name': org_dict['name'],
+                    'id': org_dict['id'],
+                    'requests_new': [r] if r.get('state') == 'new' else [],
+                    'requests_open': [r] if r.get('state') == 'open' else [],
+                    'requests_archive': {},
+                    'maintainers': [],
+                    'counters': {},
+                    'packages': [pkg_dict]
+                }
+                orgs_map[org_dict['name']] = new_org_dict
+            else:
+                new_org_dict['packages'].append(pkg_dict)
                 if r.get('state') == 'new':
                     new_org_dict['requests_new'].append(r)
                 elif r.get('state') == 'open':
                     new_org_dict['requests_open'].append(r)
-                # elif r.get('state') == 'archive':
-                #     new_org_dict['requests_archive'].append(r)
+
+            if r.get('state') == 'archive':
+                if pkg_dict['id'] not in new_org_dict['requests_archive']:
+                    new_org_dict['requests_archive'][pkg_dict['id']] = {
+                        'package_id': pkg_dict['id'],
+                        'title': pkg_dict.get('title'),
+                        'maintainers': pkg_maintainers,
+                        'requests_archived': [],
+                        'shared': None,
+                    }
+
+                new_org_dict['requests_archive'][pkg_dict['id']].get('requests_archived', []).append(r)
 
     for o in orgs_map.values():
-        num_of_archived = sum((p['requests'] for p in o['requests_archive']))
+        o['requests_archive'] = o['requests_archive'].values()
+        num_of_archived = 0
+        for p in o['requests_archive']:
+            p['requests'] = len(p['requests_archived'])
+            num_of_archived += p['requests']
+            if p['package_id'] in archived_counters_map:
+                archived_counters = archived_counters_map[p['package_id']]
+                p.update(archived_counters)
         o['requests'] = num_of_archived + len(o['requests_open']) + len(o['requests_new'])
 
     return orgs_map
