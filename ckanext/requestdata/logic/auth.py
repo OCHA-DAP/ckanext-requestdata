@@ -100,3 +100,7 @@ def _user_has_access_to_request(context, data_dict):
 
 def request_delete_by_package_id(context, data_dict):
     return authz.is_authorized('package_delete', context, {'id': data_dict['package_id']})
+
+
+def request_archive_by_package_id(context, data_dict):
+    return authz.is_authorized('package_update', context, {'id': data_dict['package_id']})

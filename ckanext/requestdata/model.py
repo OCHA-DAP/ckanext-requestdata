@@ -109,12 +109,14 @@ class ckanextRequestdata(DomainObject):
         return query
 
     @classmethod
-    def get_pending_request(cls, package_id, user_id, states):
+    def get_pending_requests(cls, package_id, user_id=None):
         query = Session.query(cls).autoflush(False)
-        query = query.filter(cls.package_id == package_id, cls.sender_user_id == user_id,
-                             cls.state.in_(states)).first()
 
-        return query
+        query = query.filter(cls.package_id == package_id, cls.state.in_(['new', 'open']))
+        if user_id:
+            query = query.filter(cls.sender_user_id == user_id)
+
+        return query.all()
 
     @classmethod
     def get_by_package_ids(cls, package_ids, order='modified_at desc'):
