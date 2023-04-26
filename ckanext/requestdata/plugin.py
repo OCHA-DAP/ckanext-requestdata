@@ -175,11 +175,6 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
     def after_update(self, context, pkg_dict):
         if self._is_public_type(entity=pkg_dict) and not pkg_dict.get('private'):
             try:
-                context = {
-                    'model': model,
-                    'user': c.user or c.author,
-                    'auth_user_obj': c.userobj,
-                }
                 toolkit.get_action('requestdata_request_archive_by_package_id')(context, {'package_id': pkg_dict['id']})
 
             except Exception as ex:
