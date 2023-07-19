@@ -34,7 +34,7 @@ def request_list_for_current_user(context, data_dict):
 def request_list_for_organization(context, data_dict):
     current_user_id = context['auth_user_obj'].id
 
-    payload = {'id': data_dict['org_id']}
+    payload = {'id': data_dict['org_id'], 'include_users': True}
 
     try:
         organization = get_action('organization_show')(context, payload)
@@ -85,7 +85,7 @@ def _user_has_access_to_request(context, data_dict):
     if current_user_id == creator_user_id or current_user_id == maintainer_user_id:
         return True
     else:
-        payload = {'id': package['owner_org']}
+        payload = {'id': package['owner_org'], 'include_users': True}
         organization = get_action('organization_show')(context, payload)
 
         for user in organization['users']:
