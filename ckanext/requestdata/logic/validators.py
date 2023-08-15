@@ -96,7 +96,7 @@ def pending_request_validator(key, data, errors, context):
     model = context['model']
     user = model.User.get(context['user'])
 
-    existing_request = ckanextRequestdata.get_pending_request(data[key], user.id, ['new', 'open'])
+    existing_request = ckanextRequestdata.get_pending_requests(package_id=data[key], user_id=user.id)
 
     if existing_request:
         errors[key].append(_('You already have a pending request. Please wait for the reply.'))

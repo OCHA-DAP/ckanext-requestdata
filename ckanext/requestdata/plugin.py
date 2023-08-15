@@ -75,6 +75,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
             'requestdata_request_data_counters_get_all': actions.request_data_counters_get_all,
             'requestdata_request_data_counters_get_by_org': actions.request_data_counters_get_by_org,
             'requestdata_request_delete_by_package_id': actions.request_delete_by_package_id,
+            'requestdata_request_archive_by_package_id': actions.request_archive_by_package_id,
             # 'requestdata_maintainer_delete': actions.maintainer_delete,
             # 'requestdata_counter_delete': actions.counter_delete,
         }
@@ -93,6 +94,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
             'requestdata_request_list_for_sysadmin':
                 auth.request_list_for_sysadmin,
             'requestdata_request_delete_by_package_id': auth.request_delete_by_package_id,
+            'requestdata_request_archive_by_package_id': auth.request_archive_by_package_id,
         }
 
     # ITemplateHelpers
@@ -170,8 +172,16 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
         return search_params
 
-    # IDomainObjectModification
+    def after_update(self, context, pkg_dict):
+        if self._is_public_type(entity=pkg_dict) and not pkg_dict.get('private'):
+            try:
+                toolkit.get_action('requestdata_request_archive_by_package_id')(context, {'package_id': pkg_dict['id']})
 
+            except Exception as ex:
+                log.exception(ex)
+                log.warn('Problem occured while trying to archive requestdata requests')
+
+    # IDomainObjectModification
     def notify(self, entity, operation):
         try:
             if entity and entity.__class__ and 'Package' == entity.__class__.__name__ and operation == 'deleted':
@@ -197,6 +207,12 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
         elif entity.extras:
             return 'true' == entity.extras.get('is_requestdata_type')
         return False
+
+    def _is_public_type(self, entity):
+        for extra in entity.get('extras'):
+            if extra.get('key') == 'is_requestdata_type':
+                return 'true' != extra.get('value')
+        return True
 
     # IBlueprint
     def get_blueprint(self):
