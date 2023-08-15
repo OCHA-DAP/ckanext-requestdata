@@ -143,7 +143,7 @@ def request_list_for_sysadmin(context, data_dict):
 
     _check_access('hdx_request_data_admin_list', context, data_dict)
 
-    requests = ckanextRequestdata.search()
+    requests = ckanextRequestdata.search(order='created_at desc')
 
     out = []
 
@@ -375,7 +375,7 @@ def increment_request_data_counters(context, data_dict):
     flag = data.get('flag')
     package_id = data.get('package_id')
     package = __get_action('package_show')(context, {'id': package_id})
-    if package.get('is_requestdata_type'):
+    if package.get('is_requestdata_type') or data_dict.get('shared_publicly'):
         data = {
             'package_id': package_id,
             'org_id': package['owner_org']
@@ -516,3 +516,47 @@ def request_delete_by_package_id(context, data_dict):
         request_delete(context, {'id': request_id})
 
         log.info('Request data was deleted, with id ' + str(rq.id))
+
+
+def request_archive_by_package_id(context, data_dict):
+    _check_access('requestdata_request_archive_by_package_id', context, data_dict)
+    package_id = data_dict.get('package_id')
+    requests = ckanextRequestdata.get_pending_requests(package_id=package_id)
+
+    for request in requests:
+        if request.state == 'new':
+            open_data_dict = {
+                'id': request.id,
+                'package_id': package_id,
+                'state': 'open',
+                'data_shared': True,
+            }
+            request_patch(context, open_data_dict)
+
+            replied_data_dict = {
+                'package_id': package_id,
+                'flag': 'replied',
+                'shared_publicly': True
+            }
+            increment_request_data_counters(context, replied_data_dict)
+
+        archive_data_dict = {
+            'id': request.id,
+            'package_id': package_id,
+            'state': 'archive',
+            'data_shared': True,
+        }
+        request_patch(context, archive_data_dict)
+
+        shared_data_dict = {
+            'package_id': package_id,
+            'flag': 'shared',
+            'shared_publicly': True
+        }
+        increment_request_data_counters(context, shared_data_dict)
+
+        auto_approval_data_dict = {
+            'id': request.id,
+            'package_id': package_id
+        }
+        __get_action('hdx_send_request_data_auto_approval')(context, auto_approval_data_dict)

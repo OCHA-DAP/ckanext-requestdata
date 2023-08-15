@@ -26,7 +26,7 @@ Example usage:
   </div>
 
   {% if requests | length > 0 %}
-    <div class="requested-data-container__content">
+    <div class="requested-data-container__content requested-data-container__content-state-{{ state }}">
       {% for item in requests %}
         {% snippet 'requestdata/snippets/section_item_' + state + '.html', item=item, template_type=template_type, index=loop.index %}
       {% endfor %}

@@ -18,6 +18,9 @@
 .requested-data-container__content-item h4 {
   padding-left: 18px;
   width: 27%;
+}
+
+.requested-data-container__content-state-archive .requested-data-container__content-item h4  {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
