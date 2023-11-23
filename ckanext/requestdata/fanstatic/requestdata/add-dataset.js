@@ -15,7 +15,7 @@ this.ckan.module('add-dataset-modal', function($) {
 
       this.datasetModal = $('.add-dataset-modal')
       this.datasetModalBackdrop = $('.add-dataset-modal-backdrop')
-      this.dismissButton = this.datasetModal.find('button[data-dismiss="modal"]')
+      this.dismissButton = this.datasetModal.find('button[data-bs-dismiss="modal"]')
 
       this.datasetModalBackdrop.on('click', this._onCloseModal)
       this.dismissButton.on('click', this._onCloseModal)
