@@ -216,7 +216,7 @@
 .requested-data-order-btn{
     float: right;
     margin-top: 15px;
-    z-index: 2;
+    z-index: 101;
 }
 .requested-data-counters-num{
     width: 12px !important;
