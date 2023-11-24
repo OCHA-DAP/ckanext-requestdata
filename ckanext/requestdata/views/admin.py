@@ -2,7 +2,7 @@ import json
 import io
 from collections import namedtuple as namedtuple
 
-import unicodecsv as csv
+import csv
 from flask import Blueprint
 from flask import make_response
 from six import StringIO
