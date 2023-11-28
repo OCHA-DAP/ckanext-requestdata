@@ -13,9 +13,10 @@
 {% endif %}
 
 <div class="dropdown requested-data-order-btn">
-  <span class="text-uppercase">Order by:</span>
-  <a class="dropdown-toggle" data-bs-toggle="dropdown">
+  <span class="text-uppercase">Order by: &nbsp;</span>
+  <a href="#" data-bs-toggle="dropdown">
     <span class="requested-data-order-btn--current-order">{{ current_order_name }}</span>
+    <i class="humanitarianicons-Down"></i>
   </a>
   <ul class="dropdown-menu dropdown-menu-left">
     <li><a class="dropdown-item" href="{{ service_url }}{{ most_recent }}">Most Recent</a></li>
