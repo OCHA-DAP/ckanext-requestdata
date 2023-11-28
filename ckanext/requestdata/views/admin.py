@@ -1,7 +1,8 @@
 import json
+import io
 from collections import namedtuple as namedtuple
 
-import unicodecsv as csv
+import csv
 from flask import Blueprint
 from flask import make_response
 from six import StringIO
@@ -517,21 +518,22 @@ def download_requests_data():
         :returns: json or csv file
     '''
 
-    file_format = request.query_string
+    file_format = request.args.get('format', '')
     requests_dict = _get_action('requestdata_request_list_for_sysadmin', {})
-    s = StringIO()
-
+    buf = io.StringIO()
     if 'json' in file_format.lower():
-        json.dump(requests_dict, s, indent=4)
+        json.dump(requests_dict, buf, indent=4)
 
-        output = make_response(s.getvalue())
+        output = make_response(buf.getvalue())
         output.headers['Content-Type'] = 'application/json'
         output.headers['Content-Disposition'] = 'attachment; filename="data_requests.json"'
 
         return output
 
+    buf = io.BytesIO()
     if 'csv' in file_format.lower():
-        writer = csv.writer(s, encoding='utf-8')
+        writer = csv.writer(buf, encoding='utf-8')
+
         header = True
         for k in requests_dict:
             if header:
@@ -539,7 +541,7 @@ def download_requests_data():
                 header = False
             writer.writerow(k.values())
 
-        output = make_response(s.getvalue())
+        output = make_response(buf.getvalue())
         output.headers['Content-Type'] = 'text/csv'
         output.headers['Content-Disposition'] = 'attachment; filename="data_requests.csv"'
 

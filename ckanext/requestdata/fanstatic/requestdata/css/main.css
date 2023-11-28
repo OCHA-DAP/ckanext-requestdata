@@ -18,6 +18,9 @@
 .requested-data-container__content-item h4 {
   padding-left: 18px;
   width: 27%;
+}
+
+.requested-data-container__content-state-archive .requested-data-container__content-item h4  {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -213,7 +216,7 @@
 .requested-data-order-btn{
     float: right;
     margin-top: 15px;
-    z-index: 2;
+    z-index: 101;
 }
 .requested-data-counters-num{
     width: 12px !important;
