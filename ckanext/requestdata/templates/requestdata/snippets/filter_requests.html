@@ -19,13 +19,13 @@ Example usage:
      data-module-org_name="{{ org_name }}"
      data-module-type="{{ type }}"
      class="filter-requests dropdown">
-  <span style="text-transform: uppercase;">Filter by:&nbsp;</span>
-    <a class="dropdown-toggle" data-toggle="dropdown">
+  <span class="text-uppercase">Filter by:&nbsp;</span>
+    <a href="#" data-toggle="dropdown">
       <span class="filter-requests-text">{{ title }}</span>
-      <span class="caret"></span>
+      <i class="humanitarianicons-Down"></i>
     </a>
     <div class="dropdown-menu sysadmin-requests-container__dropdown">
-      <div onclick="event.stopPropagation()">
+      <div onclick="event.stopPropagation()" class="sysadmin-requests-container__scrollable-content">
         {% for item in filter_options %}
           {% if type == 'maintainer' %}
             {% set value = item.username %}
