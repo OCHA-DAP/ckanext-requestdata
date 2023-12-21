@@ -1,8 +1,6 @@
 import json
 
-from six import text_type
 from flask import Blueprint
-from paste.deploy.converters import asbool
 
 from ckan import model
 from ckan.plugins import toolkit as tk
@@ -16,6 +14,7 @@ NotFound = tk.ObjectNotFound
 NotAuthorized = tk.NotAuthorized
 ValidationError = tk.ValidationError
 
+asbool = tk.asbool
 abort = tk.abort
 g = tk.g
 _ = tk._
