@@ -1,9 +1,9 @@
 from ckanext.hdx_theme.util.mail import hdx_validate_email as validate_email
 from ckanext.requestdata.model import ckanextRequestdata
-from paste.deploy.converters import asbool
 import ckan.plugins.toolkit as tk
 
 _ = tk._
+asbool = tk.asbool
 get_action = tk.get_action
 StopOnError = tk.StopOnError
 

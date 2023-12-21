@@ -4,7 +4,6 @@ import json
 from operator import itemgetter
 from six import string_types
 import timeago
-from paste.deploy.converters import asbool
 
 from ckan import model
 from ckan.model.user import User
@@ -20,7 +19,7 @@ _ = tk._
 request = tk.request
 get_action = tk.get_action
 abort = tk.abort
-
+asbool = tk.asbool
 
 def _get_context():
     return {
