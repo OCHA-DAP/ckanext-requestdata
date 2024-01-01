@@ -162,7 +162,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
     # IPackageController
 
-    def before_search(self, search_params):
+    def before_dataset_search(self, search_params):
         fq = search_params.get('fq', '')
 
         if 'dataset_type:dataset' in fq:
@@ -173,7 +173,7 @@ class RequestdataPlugin(plugins.SingletonPlugin, toolkit.DefaultDatasetForm):
 
         return search_params
 
-    def after_update(self, context, pkg_dict):
+    def after_dataset_update(self, context, pkg_dict):
         if self._is_public_type(entity=pkg_dict) and not pkg_dict.get('private'):
             try:
                 toolkit.get_action('requestdata_request_archive_by_package_id')(context, {'package_id': pkg_dict['id']})

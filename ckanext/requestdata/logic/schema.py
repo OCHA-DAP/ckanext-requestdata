@@ -1,11 +1,12 @@
 from ckan.plugins import toolkit
-from six import text_type
 from ckanext.requestdata.logic import validators
 
 
 not_missing = toolkit.get_validator('not_missing')
 not_empty = toolkit.get_validator('not_empty')
 package_id_exists = toolkit.get_validator('package_id_exists')
+unicode_safe = toolkit.get_validator('unicode_safe')
+
 email_validator = validators.email_validator
 state_validator = validators.state_validator
 boolean_validator = validators.boolean_validator
@@ -16,31 +17,31 @@ not_empty_if_other_selected = validators.not_empty_if_other_selected
 
 def request_create_schema():
     return {
-        'sender_name': [not_empty, text_type],
+        'sender_name': [not_empty, unicode_safe],
         'email_address': [not_empty, email_validator],
-        'message_content': [not_empty, text_type],
+        'message_content': [not_empty, unicode_safe],
         'package_id': [not_empty, package_id_exists, pending_request_validator],
-        'sender_country': [not_empty, text_type],
-        'sender_organization_id': [not_empty, text_type],
+        'sender_country': [not_empty, unicode_safe],
+        'sender_organization_id': [not_empty, unicode_safe],
         'sender_organization_id_other': [not_empty_if_other_selected],
-        'sender_organization_type': [not_empty, text_type],
+        'sender_organization_type': [not_empty, unicode_safe],
         'sender_organization_type_other': [not_empty_if_other_selected],
-        'sender_intend': [not_empty, text_type],
+        'sender_intend': [not_empty, unicode_safe],
         'sender_intend_other': [not_empty_if_other_selected],
     }
 
 
 def request_show_schema():
     return {
-        'id': [not_empty, text_type],
+        'id': [not_empty, unicode_safe],
         'package_id': [not_empty, package_id_exists]
     }
 
 
 def request_patch_schema():
     return {
-        'id': [not_empty, text_type],
-        'package_id': [not_empty, package_id_exists, text_type],
+        'id': [not_empty, unicode_safe],
+        'package_id': [not_empty, package_id_exists, unicode_safe],
         'state': [state_validator],
         'data_shared': [boolean_validator],
         'rejected': [boolean_validator]
@@ -61,7 +62,7 @@ def notification_create_schema():
 
 def notification_change_schema():
     return{
-        'user_id': [not_empty, text_type]
+        'user_id': [not_empty, unicode_safe]
     }
 
 
