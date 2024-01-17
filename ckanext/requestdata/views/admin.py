@@ -530,9 +530,8 @@ def download_requests_data():
 
         return output
 
-    buf = io.BytesIO()
     if 'csv' in file_format.lower():
-        writer = csv.writer(buf, encoding='utf-8')
+        writer = csv.writer(buf)
 
         header = True
         for k in requests_dict:
