@@ -19,7 +19,13 @@ this.ckan.module('handle-open-request', function($) {
       var base_url = ckan.sandbox().client.endpoint;
       var url = base_url + '/api/action/' + action;
 
-      return $.post(url, JSON.stringify(data), 'json');
+      return $.ajax({
+        url: url,
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        headers: hdxUtil.net.getCsrfTokenAsObject(),
+      });
     }
   };
 
@@ -55,12 +61,16 @@ this.ckan.module('handle-open-request', function($) {
 
       this.buttonClicked = true;
 
-      $.post(url, payload, 'json')
-        .done(function(data) {
+      $.ajax({
+        url: url,
+        type: 'POST',
+        contentType: 'application/x-www-form-urlencoded',
+        dataType: 'json',
+        headers: hdxUtil.net.getCsrfTokenAsObject(),
+        data: payload,
+        success: function (data) {
           var className = '';
           var message = '';
-
-          data = JSON.parse(data);
 
           if (data.success) {
             if (payload.data_shared === true) {
@@ -83,10 +93,11 @@ this.ckan.module('handle-open-request', function($) {
 
             this.el.removeAttr('disabled');
           }
-        }.bind(this))
-        .fail(function(error) {
+        }.bind(this),
+        error: function (error) {
           this.el.removeAttr('disabled');
-        }.bind(this));
+        }.bind(this)
+      });
     },
     _disableActionButtons: function(data_shared) {
       this.el.attr('disabled', 'disabled');

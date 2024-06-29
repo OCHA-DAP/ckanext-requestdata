@@ -17,7 +17,13 @@ this.ckan.module('modal-form', function($) {
         post: function(action, data, api_ver = 3) {
             var base_url = ckan.sandbox().client.endpoint;
             var url = base_url + '/api/' + api_ver + '/action/' + action;
-            return $.post(url, JSON.stringify(data), "json");
+            return $.ajax({
+              url: url,
+              type: 'POST',
+              contentType: 'application/json',
+              data: JSON.stringify(data),
+              headers: hdxUtil.net.getCsrfTokenAsObject(),
+            });
         }
     };
 
@@ -143,7 +149,8 @@ this.ckan.module('modal-form', function($) {
                 data: formData,
                 processData: false,
                 contentType: false,
-                type: 'POST'
+                type: 'POST',
+                headers: hdxUtil.net.getCsrfTokenAsObject(),
               })
                 .done(function(data) {
                     data = JSON.parse(data);
