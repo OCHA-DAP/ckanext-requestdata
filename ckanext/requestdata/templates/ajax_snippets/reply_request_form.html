@@ -10,6 +10,7 @@
         <p>{{ message_content }}</p>
       </blockquote>
       <form class="form-horizontal col-sm-12" enctype="multipart/form-data">
+        {{ h.csrf_input() }}
         <div class="alert alert-error hide"></div>
         {{ form.textarea('message_content', label=_('Message content'), is_required=true, attrs={'required': 'required', 'class': 'form-element'}) }}
 
