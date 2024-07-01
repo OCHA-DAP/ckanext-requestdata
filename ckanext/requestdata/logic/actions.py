@@ -1,5 +1,6 @@
 import datetime
 import logging
+import json
 import ckan.plugins.toolkit as tk
 import ckan.lib.navl.dictization_functions as df
 from ckan.model.user import User
@@ -149,6 +150,17 @@ def request_list_for_sysadmin(context, data_dict):
 
     for item in requests:
         out.append(item.as_dict())
+
+    for o_item in out:
+        extras =  o_item.get('extras', None)
+        if extras is not None:
+            extras_dict = json.loads(extras)
+            o_item["country"] = extras_dict.get('country')
+            o_item["organization_id"] = extras_dict.get('organization_id')
+            o_item["organization_name"] = extras_dict.get('organization_name')
+            o_item["organization_member"] = extras_dict.get('organization_member')
+            o_item["organization_type"] = extras_dict.get('organization_type')
+            o_item["intend"] = extras_dict.get('intend')
 
     return out
 
