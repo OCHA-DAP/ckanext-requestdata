@@ -162,6 +162,18 @@ def request_list_for_sysadmin(context, data_dict):
             o_item["organization_type"] = extras_dict.get('organization_type')
             o_item["intend"] = extras_dict.get('intend')
 
+    if data_dict.get('include_pkg_org'):
+        for item in out:
+            try:
+                pkg = __get_action('package_show')(context, {'id': item.get('package_id')})
+                pkg_org = pkg.get('organization')
+                item['pkg_organization_id'] = pkg_org.get('id')
+                item['pkg_organization_name'] = pkg_org.get('name')
+                item['pkg_organization_title'] = pkg_org.get('title')
+            except NotFound:
+                item['pkg_organization_id'] = None
+                item['pkg_organization_name'] = None
+                item['pkg_organization_title'] = None
     return out
 
 

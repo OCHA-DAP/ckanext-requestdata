@@ -519,7 +519,7 @@ def download_requests_data():
     '''
 
     file_format = request.args.get('format', '')
-    requests_dict = _get_action('requestdata_request_list_for_sysadmin', {})
+    requests_dict = _get_action('requestdata_request_list_for_sysadmin', {'include_pkg_org': True})
     buf = io.StringIO()
     if 'json' in file_format.lower():
         json.dump(requests_dict, buf, indent=4)
