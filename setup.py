@@ -17,13 +17,13 @@ setup(
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
     # http://packaging.python.org/en/latest/tutorial.html#version
-    version='0.0.1',
+    version='3.0.34',
 
     description='''''',
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com//ckanext-requestdata',
+    url='https://github.com/OCHA-DAP/ckanext-requestdata',
 
     # Author details
     author='''''',
@@ -46,7 +46,7 @@ setup(
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
     ],
 
 
