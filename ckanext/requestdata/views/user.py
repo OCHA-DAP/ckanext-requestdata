@@ -263,13 +263,14 @@ def handle_open_request_action(username, request_action):
         'package_id': data['package_id'],
         'flag': ''
     }
-    if data['data_shared']:
-        data_dict['flag'] = 'shared'
-    else:
-        data_dict['flag'] = 'declined'
+    if 'data_shared' in data:
+        if data.get('data_shared'):
+            data_dict['flag'] = 'shared'
+        else:
+            data_dict['flag'] = 'declined'
 
-    action_name = 'requestdata_increment_request_data_counters'
-    _get_action(action_name, data_dict)
+        action_name = 'requestdata_increment_request_data_counters'
+        _get_action(action_name, data_dict)
 
     try:
         _get_action('requestdata_request_patch', data)
