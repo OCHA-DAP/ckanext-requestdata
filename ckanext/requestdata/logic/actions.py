@@ -9,6 +9,7 @@ from ckanext.requestdata.model import ckanextRequestdata, \
     ckanextUserNotification, ckanextMaintainers, ckanextRequestDataCounters
 from ckanext.requestdata import helpers
 from ckanext.requestdata.view_helper import process_extras_fields
+from ckanext.requestdata.views.admin import __find_packages
 
 NotAuthorized = tk.NotAuthorized
 ValidationError = tk.ValidationError
@@ -147,33 +148,57 @@ def request_list_for_sysadmin(context, data_dict):
     requests = ckanextRequestdata.search(order='created_at desc')
 
     out = []
+    package_ids = []
 
     for item in requests:
-        out.append(item.as_dict())
-
-    for o_item in out:
-        extras =  o_item.get('extras', None)
+        item_dict = item.as_dict()
+        extras = item_dict.get('extras', None)
         if extras is not None:
             extras_dict = json.loads(extras)
-            o_item["country"] = extras_dict.get('country')
-            o_item["organization_id"] = extras_dict.get('organization_id')
-            o_item["organization_name"] = extras_dict.get('organization_name')
-            o_item["organization_member"] = extras_dict.get('organization_member')
-            o_item["organization_type"] = extras_dict.get('organization_type')
-            o_item["intend"] = extras_dict.get('intend')
+            item_dict["country"] = extras_dict.get('country')
+            item_dict["organization_id"] = extras_dict.get('organization_id')
+            item_dict["organization_name"] = extras_dict.get('organization_name')
+            item_dict["organization_member"] = extras_dict.get('organization_member')
+            item_dict["organization_type"] = extras_dict.get('organization_type')
+            item_dict["intend"] = extras_dict.get('intend')
+        package_ids.append(item_dict.get('package_id'))
+        out.append(item_dict)
 
-    if data_dict.get('include_pkg_org'):
-        for item in out:
-            try:
-                pkg = __get_action('package_show')(context, {'id': item.get('package_id')})
+    try:
+        if data_dict.get('include_pkg_org'):
+            package_ids = list(set(package_ids))
+            search_result = __find_packages(package_ids)
+            pkg_dict = {}
+            for pkg in search_result.get('results', []):
                 pkg_org = pkg.get('organization')
-                item['pkg_organization_id'] = pkg_org.get('id')
-                item['pkg_organization_name'] = pkg_org.get('name')
-                item['pkg_organization_title'] = pkg_org.get('title')
-            except NotFound:
-                item['pkg_organization_id'] = None
-                item['pkg_organization_name'] = None
-                item['pkg_organization_title'] = None
+                pkg_dict[pkg.get('id')] = {
+                    'pkg_organization_id': pkg_org.get('id'),
+                    'pkg_organization_name': pkg_org.get('name'),
+                    'pkg_organization_title': pkg_org.get('title')
+                }
+            for item in out:
+                pkg_id = item.get('package_id')
+                if pkg_id in pkg_dict:
+                    item['pkg_organization_id'] = pkg_dict[pkg_id].get('pkg_organization_id')
+                    item['pkg_organization_name'] = pkg_dict[pkg_id].get('pkg_organization_name')
+                    item['pkg_organization_title'] = pkg_dict[pkg_id].get('pkg_organization_title')
+                else:
+                    item['pkg_organization_id'] = None
+                    item['pkg_organization_name'] = None
+                    item['pkg_organization_title'] = None
+    except Exception as e:
+        log.error(e)
+        # for item in out:
+        #     try:
+        #         pkg = __get_action('package_show')(context, {'id': item.get('package_id')})
+        #         pkg_org = pkg.get('organization')
+        #         item['pkg_organization_id'] = pkg_org.get('id')
+        #         item['pkg_organization_name'] = pkg_org.get('name')
+        #         item['pkg_organization_title'] = pkg_org.get('title')
+        #     except NotFound:
+        #         item['pkg_organization_id'] = None
+        #         item['pkg_organization_name'] = None
+        #         item['pkg_organization_title'] = None
     return out
 
 

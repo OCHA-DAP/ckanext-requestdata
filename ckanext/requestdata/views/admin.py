@@ -122,13 +122,14 @@ def requests_data():
     filtered_orgs_map = {k: v for k, v in orgs_map.items() if k in filtered_orgs} if filtered_orgs else orgs_map
     orgs = sorted(filtered_orgs_map.values(), key=lambda o: o['title'])
 
-    total_requests_counters = _get_action('requestdata_request_data_counters_get_all', {})
+    # total_requests_counters = _get_action('requestdata_request_data_counters_get_all', {})
     Requests = namedtuple('Requests', ['id', 'org'])
     extra_vars = {
         'organizations': orgs,
         'organizations_for_filters': sorted((Requests(o['id'], o) for o in orgs_map.values()),
                                             key=lambda r: r.org['requests'], reverse=True),
-        'total_requests_counters': total_requests_counters
+        # 'total_requests_counters': total_requests_counters,
+        'total_requests': len(requests),
     }
 
     ret = render('admin/all_requests_data.html', extra_vars)
