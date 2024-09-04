@@ -9,6 +9,7 @@ from ckanext.requestdata.model import ckanextRequestdata, \
     ckanextUserNotification, ckanextMaintainers, ckanextRequestDataCounters
 from ckanext.requestdata import helpers
 from ckanext.requestdata.view_helper import process_extras_fields
+from ckanext.requestdata.views.admin import __find_packages
 
 NotAuthorized = tk.NotAuthorized
 ValidationError = tk.ValidationError
@@ -65,9 +66,9 @@ def request_create(context, data_dict):
     except NotFound:
         sender_org = None
 
-    extras = process_extras_fields(data, sender_orgs, sender_org)
-
     package = __get_action('package_show')(context, {'id': package_id})
+
+    extras = process_extras_fields(data, sender_orgs, sender_org, package)
 
     if package.get('is_requestdata_type'):
         if package.get('maintainer'):
@@ -147,33 +148,72 @@ def request_list_for_sysadmin(context, data_dict):
     requests = ckanextRequestdata.search(order='created_at desc')
 
     out = []
+    package_ids = []
 
     for item in requests:
-        out.append(item.as_dict())
-
-    for o_item in out:
-        extras =  o_item.get('extras', None)
+        item_dict = item.as_dict()
+        extras = item_dict.get('extras', None)
         if extras is not None:
             extras_dict = json.loads(extras)
-            o_item["country"] = extras_dict.get('country')
-            o_item["organization_id"] = extras_dict.get('organization_id')
-            o_item["organization_name"] = extras_dict.get('organization_name')
-            o_item["organization_member"] = extras_dict.get('organization_member')
-            o_item["organization_type"] = extras_dict.get('organization_type')
-            o_item["intend"] = extras_dict.get('intend')
+            item_dict["country"] = extras_dict.get('country','NA')
+            item_dict["organization_id"] = extras_dict.get('organization_id','NA')
+            item_dict["organization_name"] = extras_dict.get('organization_name','NA')
+            item_dict["organization_member"] = extras_dict.get('organization_member','NA')
+            item_dict["organization_type"] = extras_dict.get('organization_type','NA')
+            item_dict["intend"] = extras_dict.get('intend','NA')
+        else:
+            item_dict["country"] = 'NA'
+            item_dict["organization_id"] = 'NA'
+            item_dict["organization_name"] = 'NA'
+            item_dict["organization_member"] = 'NA'
+            item_dict["organization_type"] = 'NA'
+            item_dict["intend"] = 'NA'
 
-    if data_dict.get('include_pkg_org'):
-        for item in out:
-            try:
-                pkg = __get_action('package_show')(context, {'id': item.get('package_id')})
+        package_ids.append(item_dict.get('package_id'))
+        out.append(item_dict)
+
+    try:
+        if data_dict.get('include_pkg_org'):
+            package_ids = list(set(package_ids))
+            search_result = __find_packages(package_ids)
+            pkg_dict = {}
+            for pkg in search_result.get('results', []):
                 pkg_org = pkg.get('organization')
-                item['pkg_organization_id'] = pkg_org.get('id')
-                item['pkg_organization_name'] = pkg_org.get('name')
-                item['pkg_organization_title'] = pkg_org.get('title')
-            except NotFound:
-                item['pkg_organization_id'] = None
-                item['pkg_organization_name'] = None
-                item['pkg_organization_title'] = None
+                pkg_dict[pkg.get('id')] = pkg
+                #     'pkg_organization_id': pkg_org.get('id'),
+                #     'pkg_organization_name': pkg_org.get('name'),
+                #     'pkg_organization_title': pkg_org.get('title')
+                # }
+            for item in out:
+                pkg_id = item.get('package_id')
+                if pkg_id in pkg_dict:
+                    item['pkg_organization_id'] = pkg_dict[pkg_id].get('organization').get('id')
+                    item['pkg_organization_name'] = pkg_dict[pkg_id].get('organization').get('name')
+                    item['pkg_organization_title'] = pkg_dict[pkg_id].get('organization').get('title')
+                    item['dataset_state'] = pkg_dict[pkg_id].get('state')
+                    item['is_requestdata_type'] = pkg_dict[pkg_id].get('is_requestdata_type')
+                    item['archived'] = pkg_dict[pkg_id].get('archived')
+                else:
+                    item['pkg_organization_id'] = 'NA'
+                    item['pkg_organization_name'] = 'NA'
+                    item['pkg_organization_title'] = 'NA'
+                    item['dataset_state'] = 'deleted'
+                    item['is_requestdata_type'] = False
+                    item['archived'] = False
+
+    except Exception as e:
+        log.error(e)
+        # for item in out:
+        #     try:
+        #         pkg = __get_action('package_show')(context, {'id': item.get('package_id')})
+        #         pkg_org = pkg.get('organization')
+        #         item['pkg_organization_id'] = pkg_org.get('id')
+        #         item['pkg_organization_name'] = pkg_org.get('name')
+        #         item['pkg_organization_title'] = pkg_org.get('title')
+        #     except NotFound:
+        #         item['pkg_organization_id'] = None
+        #         item['pkg_organization_name'] = None
+        #         item['pkg_organization_title'] = None
     return out
 
 
