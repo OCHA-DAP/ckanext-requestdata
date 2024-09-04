@@ -133,7 +133,7 @@ def populate_requests_with_package_title_and_maintainer(requests, id_to_user_map
         current_request['maintainers'] = [user]
 
 
-def process_extras_fields(data_dict, sender_organizations, organization):
+def process_extras_fields(data_dict, sender_organizations, organization, dataset_dict=None):
     sender_country = data_dict.get('sender_country')
     sender_organization_id = data_dict.get('sender_organization_id_other') if data_dict.get(
         'sender_organization_id_other') else data_dict.get('sender_organization_id')
@@ -155,4 +155,5 @@ def process_extras_fields(data_dict, sender_organizations, organization):
                        'organization_name': sender_organization_name,
                        'organization_member': sender_organization_member,
                        'organization_type': sender_organization_type,
-                       'intend': sender_intend})
+                       'intend': sender_intend,
+                       'dataset_dict': dataset_dict})

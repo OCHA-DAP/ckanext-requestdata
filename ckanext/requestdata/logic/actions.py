@@ -66,9 +66,9 @@ def request_create(context, data_dict):
     except NotFound:
         sender_org = None
 
-    extras = process_extras_fields(data, sender_orgs, sender_org)
-
     package = __get_action('package_show')(context, {'id': package_id})
+
+    extras = process_extras_fields(data, sender_orgs, sender_org, package)
 
     if package.get('is_requestdata_type'):
         if package.get('maintainer'):
