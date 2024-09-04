@@ -155,12 +155,20 @@ def request_list_for_sysadmin(context, data_dict):
         extras = item_dict.get('extras', None)
         if extras is not None:
             extras_dict = json.loads(extras)
-            item_dict["country"] = extras_dict.get('country')
-            item_dict["organization_id"] = extras_dict.get('organization_id')
-            item_dict["organization_name"] = extras_dict.get('organization_name')
-            item_dict["organization_member"] = extras_dict.get('organization_member')
-            item_dict["organization_type"] = extras_dict.get('organization_type')
-            item_dict["intend"] = extras_dict.get('intend')
+            item_dict["country"] = extras_dict.get('country','NA')
+            item_dict["organization_id"] = extras_dict.get('organization_id','NA')
+            item_dict["organization_name"] = extras_dict.get('organization_name','NA')
+            item_dict["organization_member"] = extras_dict.get('organization_member','NA')
+            item_dict["organization_type"] = extras_dict.get('organization_type','NA')
+            item_dict["intend"] = extras_dict.get('intend','NA')
+        else:
+            item_dict["country"] = 'NA'
+            item_dict["organization_id"] = 'NA'
+            item_dict["organization_name"] = 'NA'
+            item_dict["organization_member"] = 'NA'
+            item_dict["organization_type"] = 'NA'
+            item_dict["intend"] = 'NA'
+
         package_ids.append(item_dict.get('package_id'))
         out.append(item_dict)
 
@@ -171,21 +179,28 @@ def request_list_for_sysadmin(context, data_dict):
             pkg_dict = {}
             for pkg in search_result.get('results', []):
                 pkg_org = pkg.get('organization')
-                pkg_dict[pkg.get('id')] = {
-                    'pkg_organization_id': pkg_org.get('id'),
-                    'pkg_organization_name': pkg_org.get('name'),
-                    'pkg_organization_title': pkg_org.get('title')
-                }
+                pkg_dict[pkg.get('id')] = pkg
+                #     'pkg_organization_id': pkg_org.get('id'),
+                #     'pkg_organization_name': pkg_org.get('name'),
+                #     'pkg_organization_title': pkg_org.get('title')
+                # }
             for item in out:
                 pkg_id = item.get('package_id')
                 if pkg_id in pkg_dict:
-                    item['pkg_organization_id'] = pkg_dict[pkg_id].get('pkg_organization_id')
-                    item['pkg_organization_name'] = pkg_dict[pkg_id].get('pkg_organization_name')
-                    item['pkg_organization_title'] = pkg_dict[pkg_id].get('pkg_organization_title')
+                    item['pkg_organization_id'] = pkg_dict[pkg_id].get('organization').get('id')
+                    item['pkg_organization_name'] = pkg_dict[pkg_id].get('organization').get('name')
+                    item['pkg_organization_title'] = pkg_dict[pkg_id].get('organization').get('title')
+                    item['dataset_state'] = pkg_dict[pkg_id].get('state')
+                    item['is_requestdata_type'] = pkg_dict[pkg_id].get('is_requestdata_type')
+                    item['archived'] = pkg_dict[pkg_id].get('archived')
                 else:
-                    item['pkg_organization_id'] = None
-                    item['pkg_organization_name'] = None
-                    item['pkg_organization_title'] = None
+                    item['pkg_organization_id'] = 'NA'
+                    item['pkg_organization_name'] = 'NA'
+                    item['pkg_organization_title'] = 'NA'
+                    item['dataset_state'] = 'deleted'
+                    item['is_requestdata_type'] = False
+                    item['archived'] = False
+
     except Exception as e:
         log.error(e)
         # for item in out:
