@@ -168,6 +168,7 @@ def request_list_for_sysadmin(context, data_dict):
             item_dict["organization_member"] = 'NA'
             item_dict["organization_type"] = 'NA'
             item_dict["intend"] = 'NA'
+            item_dict["state"] = 'NA'
 
         package_ids.append(item_dict.get('package_id'))
         out.append(item_dict)
