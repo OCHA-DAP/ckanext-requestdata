@@ -201,6 +201,7 @@ def request_list_for_sysadmin(context, data_dict):
                     item['dataset_state'] = 'deleted'
                     item['is_requestdata_type'] = False
                     item['archived'] = False
+                    item["state"] = 'NA'
 
     except Exception as e:
         log.error(e)
