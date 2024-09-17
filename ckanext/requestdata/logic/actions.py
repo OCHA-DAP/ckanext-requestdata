@@ -179,12 +179,7 @@ def request_list_for_sysadmin(context, data_dict):
             search_result = __find_packages(package_ids)
             pkg_dict = {}
             for pkg in search_result.get('results', []):
-                pkg_org = pkg.get('organization')
                 pkg_dict[pkg.get('id')] = pkg
-                #     'pkg_organization_id': pkg_org.get('id'),
-                #     'pkg_organization_name': pkg_org.get('name'),
-                #     'pkg_organization_title': pkg_org.get('title')
-                # }
             for item in out:
                 pkg_id = item.get('package_id')
                 if pkg_id in pkg_dict:
@@ -201,21 +196,10 @@ def request_list_for_sysadmin(context, data_dict):
                     item['dataset_state'] = 'deleted'
                     item['is_requestdata_type'] = False
                     item['archived'] = False
-                    item["state"] = 'NA'
+                    item['state'] = 'NA'
 
     except Exception as e:
         log.error(e)
-        # for item in out:
-        #     try:
-        #         pkg = __get_action('package_show')(context, {'id': item.get('package_id')})
-        #         pkg_org = pkg.get('organization')
-        #         item['pkg_organization_id'] = pkg_org.get('id')
-        #         item['pkg_organization_name'] = pkg_org.get('name')
-        #         item['pkg_organization_title'] = pkg_org.get('title')
-        #     except NotFound:
-        #         item['pkg_organization_id'] = None
-        #         item['pkg_organization_name'] = None
-        #         item['pkg_organization_title'] = None
     return out
 
 
