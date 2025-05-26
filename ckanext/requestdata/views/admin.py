@@ -519,8 +519,12 @@ def download_requests_data():
         :returns: json or csv file
     '''
 
+    try:
+        requests_dict = _get_action('requestdata_request_list_for_sysadmin', {'include_pkg_org': True})
+    except NotAuthorized:
+        abort(403, _('Not authorized to see this page.'))
+
     file_format = request.args.get('format', '')
-    requests_dict = _get_action('requestdata_request_list_for_sysadmin', {'include_pkg_org': True})
     buf = io.StringIO()
     if 'json' in file_format.lower():
         json.dump(requests_dict, buf, indent=4)
@@ -546,7 +550,7 @@ def download_requests_data():
         output.headers['Content-Disposition'] = 'attachment; filename="data_requests.csv"'
 
         return output
-
+    abort(404, _('Page not found.'))
 
 requestdata_ckanadmin.add_url_rule(u'/email', view_func=email, methods=(u'GET', u'POST',))
 requestdata_ckanadmin.add_url_rule(u'/requests_data/download', view_func=download_requests_data, methods=[u'GET'])
