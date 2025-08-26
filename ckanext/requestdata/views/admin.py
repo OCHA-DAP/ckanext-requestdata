@@ -152,7 +152,7 @@ def __find_packages(package_ids):
 
 
 def __find_filtered_orgs():
-    req_param = request.params.get('filter_by_organizations')
+    req_param = request.args.get('filter_by_organizations')
     if req_param:
         filtered_organizations = req_param.split(',')
         if filtered_organizations:
