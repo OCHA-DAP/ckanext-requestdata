@@ -150,7 +150,7 @@ def fetch_counters_for_packages_as_map(package_ids):
 def has_query_param(param):
     # Checks if the provided parameter is part of the current URL query params
 
-    params = dict(request.params)
+    params = dict(request.args)
 
     if param in params:
         return True
